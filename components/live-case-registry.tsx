@@ -255,6 +255,7 @@ export function LiveCaseRegistry() {
           <ArrowLeft size={15} />
           Demo workspace
         </Link>
+        <Link href="/platform" className="btn">Platform workspace</Link>
       </header>
       <section className="live-preview-workspace">
         <LiveReadiness />

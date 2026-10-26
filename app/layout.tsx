@@ -4,6 +4,7 @@ import "@xyflow/react/dist/style.css";
 import "./globals.css";
 import "./overview.css";
 import "./live-preview.css";
+import "./platform.css";
 import { AppFrame } from "@/components/app-frame";
 export const metadata: Metadata = {
   title: "SYNAPSE · Coordinated resolution",
