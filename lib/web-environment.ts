@@ -3,7 +3,7 @@
 export function assertWebEnvironment(env: Record<string, string | undefined>) {
   const forbidden = Object.keys(env).filter((name) =>
     Boolean(env[name]?.trim()) &&
-    (["SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY", "DATABASE_URL"].includes(name.toUpperCase()) ||
+    (["SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY", "DATABASE_URL", "SYNAPSE_SLA_DATABASE_URL"].includes(name.toUpperCase()) ||
       /^NEXT_PUBLIC_.*(SECRET|SERVICE_ROLE|DATABASE_URL|PASSWORD|PRIVATE_KEY|TOKEN)/i.test(name)),
   );
   if (forbidden.length)

@@ -5,12 +5,16 @@ import type { Phase1Database } from "./contracts";
 import { phase1Config } from "./config";
 import { databaseError, Phase1Error, type ReadOnlyTransport } from "./service";
 import { sessionCookieName } from "./session";
+import { gateway } from "../auth/gateway";
+import { validatedClaims } from "../auth/policy";
 
 export function phase1Context(
   request: NextRequest,
   options: { requirePreview?: boolean } = {},
 ) {
   const config = phase1Config(options);
+  const officerSession = request.cookies.getAll().some((c) => /^synapse-auth-session(?:\.\d+)?$/.test(c.name));
+  const cookiePath = officerSession ? "/" : "/api/phase1";
   const pending = new Map<
     string,
     { name: string; value: string; options: CookieOptions }
@@ -18,8 +22,8 @@ export function phase1Context(
   const authHeaders: Record<string, string> = {};
   const client = createServerClient<Phase1Database>(config.url, config.key, {
     cookieOptions: {
-      name: "synapse-phase1-session",
-      path: "/api/phase1",
+      name: officerSession ? "synapse-auth-session" : "synapse-phase1-session",
+      path: cookiePath,
       httpOnly: true,
       sameSite: "lax",
       secure: config.secureCookies,
@@ -45,6 +49,13 @@ export function phase1Context(
         }),
     },
   });
+  const serverRead = async (action: string, query = {}) => {
+    const { data, error } = await client.auth.getUser();
+    if (error || !data.user || !config.allowedAuthIds.includes(data.user.id)) throw databaseError("28000");
+    const session = await client.auth.getSession();
+    if (!session.data.session) throw databaseError("28000");
+    return gateway("read", validatedClaims(session.data.session.access_token, data.user, config.url), action, query);
+  };
   const transport: ReadOnlyTransport = {
     verifiedAuthUser: async () => {
       // Online validation; never trust getSession(), browser roles or an unsigned cookie payload.
@@ -56,11 +67,13 @@ export function phase1Context(
       return error ? null : data.user ? { id: data.user.id } : null;
     },
     identity: async () => {
+      if (process.env.SYNAPSE_GATEWAY_DATABASE_URL) return serverRead("identity");
       const { data, error } = await client.rpc("synapse_phase1_me");
       if (error) throw databaseError(error.code);
       return data;
     },
     cases: async (query) => {
+      if (process.env.SYNAPSE_GATEWAY_DATABASE_URL) return serverRead("cases", query);
       const { data, error } = await client.rpc("synapse_phase1_cases", {
         p_search: query.q,
         p_status: query.status ?? null,
@@ -86,7 +99,7 @@ export function phase1Context(
     for (const cookie of pending.values())
       response.cookies.set(cookie.name, cookie.value, {
         ...cookie.options,
-        path: "/api/phase1",
+        path: cookiePath,
         httpOnly: true,
         sameSite: "lax",
         secure: config.secureCookies,
@@ -100,7 +113,7 @@ export function phase1Context(
       "synapse-phase1-session",
     ]);
     for (const name of names)
-      if (sessionCookieName(name))
+      if (sessionCookieName(name) || officerSession && /^synapse-auth-session(?:\.\d+)?$/.test(name))
         pending.set(name, {
           name,
           value: "",

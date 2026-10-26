@@ -21,4 +21,6 @@ docs/phase1/*.json
 docs/phase2/*.json
 docs/phase3-5/*results.json
 docs/phase3-5/*evidence.json
+docs/phase6-7/*results.json
+docs/phase6-7/*evidence.json
 supabase/.temp/

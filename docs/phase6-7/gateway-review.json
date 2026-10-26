@@ -1,0 +1,34 @@
+{
+  "file": "20261026155044_phase6_server_auth_gateway.sql",
+  "sha256": "1020d3de31f7e69e49347c140b9081f70fa0e81571d28dbb0bd9da90eec09c55",
+  "localAuthorizationPassed": true,
+  "managedObjectsChanged": false,
+  "review": "AUTH_SECURITY_REVIEW.md",
+  "hostedApplied": true,
+  "activation": "OFF: only bounded read-security tests executed; independent release approval and hosted operational workflows remain pending",
+  "corrections": [
+    {
+      "file": "20261026161408_phase6_approval_authority_lock.sql",
+      "sha256": "5eecbbe7a1ef9aaf9b5dfdf0ab0c9627616cf89b5d945b1182d316bd75beeef8",
+      "localAuthorizationPassed": true
+    },
+    {
+      "file": "20261026165409_phase6_officer_bureau_scope.sql",
+      "sha256": "e592f490a3c4af85ab9039cac2f2ab48dfedab4620ff13b8520bb479fde2b01a",
+      "localAuthorizationPassed": true,
+      "reason": "Confirmed negative predicate test: assignment cannot replace a current role and membership in the target Bureau."
+    },
+    {
+      "file": "20261026170514_phase6_approval_input_guard.sql",
+      "sha256": "dbdba181b8317a903006e47309a1423e5ce1f4b9f8de94940799ab2a2fdaa809",
+      "localAuthorizationPassed": true,
+      "reason": "SQL and HTTP reject missing expected revision or bounded approval expiry/scope."
+    },
+    {
+      "file": "20261026173434_phase6_admin_memberships.sql",
+      "sha256": "5d602ed7b7cdd9e1705cfefe8ea2bf822230db099194d7002d58b6ff9c3f2635",
+      "localAuthorizationPassed": true,
+      "reason": "Independent administrator membership-window management with concurrency, idempotency, audit and no role-code changes."
+    }
+  ]
+}

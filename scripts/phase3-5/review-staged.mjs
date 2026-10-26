@@ -9,10 +9,17 @@ try {
   const prohibited = files.filter((f) =>
     /(^|\/)(\.env(?:\.|$))/.test(f) && ![".env.example", ".env.operator.example"].includes(f) ||
     /\.(crt|cer|pem|key|pfx|vault|log)$/i.test(f) ||
-    /^docs\/(screenshots\/|phase[12]\/.*\.json$|phase3-5\/.*(?:results|evidence)\.json$)/.test(f) || f.startsWith(".local/"));
+    /^docs\/(screenshots\/|phase[12]\/.*\.json$|phase(?:3-5|6-7)\/.*(?:results|evidence)\.json$)/.test(f) || f.startsWith(".local/"));
   if (prohibited.length) throw Error("SENSITIVE_PATH_STAGED");
   const vault = await loadVault(".local/phase2/phase2-approved-officers.vault");
-  const privateValues = [process.env.SUPABASE_SECRET_KEY, process.env.DATABASE_URL, vault.expiryProbe?.token,
+  let gateway = {};
+  try { gateway = await loadVault(".local/phase2/auth-gateway.vault"); } catch { /* Optional before gateway provisioning. */ }
+  let admin = {}, reset = {};
+  try { admin = await loadVault(".local/phase2/admin-onboarding.vault"); } catch { /* Optional before approved signup. */ }
+  try { reset = await loadVault(".local/phase2/admin-reset.vault"); } catch { /* Optional before real recovery. */ }
+  const privateValues = [process.env.SUPABASE_SECRET_KEY, process.env.DATABASE_URL, process.env.SYNAPSE_GATEWAY_DATABASE_URL,
+    gateway.password, gateway.connectionString, gateway.rateSecret, admin.password, admin.email, reset.newPassword,
+    ...(admin.cookies ?? []).map(c=>c.value),...(reset.cookies ?? []).map(c=>c.value),...(reset.resumeCookies ?? []).map(c=>c.value),vault.expiryProbe?.token,
     ...vault.accounts.flatMap((a) => [a.password, a.email])].filter(Boolean);
   let matches = 0;
   for (const file of files) {

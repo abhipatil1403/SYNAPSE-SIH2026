@@ -1,7 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
 import { envelopeSchema, principalSchema, PlatformError, type State, type Principal, type CommandResult, type PlatformCase, type Command } from "./contracts";
-import { resolveStaff, requireCase, role, current } from "./authorization";
+import { resolveStaff, requireCase, role, current, canRead } from "./authorization";
 import { authorizedSnapshot } from "./selectors";
+import { allowedTransitions } from "./lifecycle";
 
 export interface TransactionStore {
   // Implementations must serialize competing mutations and atomically persist state,
@@ -45,12 +46,6 @@ function cycle(s: State, source: string, target: string) {
   }
   return false;
 }
-// Proposed transition mapping uses deployed codes; it is not an approved hosted workflow.
-const transitions: Record<string, string[]> = {
-  NEW: ["ASSIGNED"], ASSIGNED: ["UNDER_REVIEW"], UNDER_REVIEW: ["AWAITING_INFORMATION", "ACTION_INITIATED", "ESCALATED"],
-  AWAITING_INFORMATION: ["UNDER_REVIEW"], ACTION_INITIATED: ["UNDER_REVIEW", "ESCALATED"],
-  ESCALATED: ["UNDER_REVIEW"], DISPOSED: [], REOPENED: ["ASSIGNED", "UNDER_REVIEW"],
-};
 export class PlatformEngine {
   constructor(private store: TransactionStore, private clock = () => new Date().toISOString(), private uuid = randomUUID as () => string) {}
   async snapshot(principal: Principal) {
@@ -131,7 +126,7 @@ export class PlatformEngine {
             c.officerId = cmd.officerId; break;
           }
           case "case.priority": c.priority = cmd.priority; break;
-          case "case.transition": reject(transitions[c.status]?.includes(cmd.status), "invalid_transition", "Use an approved adjacent lifecycle transition."); c.status = cmd.status; break;
+          case "case.transition": reject(allowedTransitions[c.status]?.includes(cmd.status), "invalid_transition", "Use an approved adjacent lifecycle transition."); c.status = cmd.status; break;
           case "comment.add": s.comments.push({ id: this.uuid(), caseId: c.id, authorId: user.id, body: cmd.body, at: now }); break;
           case "task.create": {
             const assignee = s.staff.find((u) => u.id === cmd.assigneeId && u.active);
@@ -212,6 +207,15 @@ export class PlatformEngine {
       s.activity.push({ id: this.uuid(), caseId: changed?.id ?? ("caseId" in cmd ? cmd.caseId : null), actorId: user.id,
         type: cmd.type, reason: "reason" in cmd ? cmd.reason : "body" in cmd ? "Recorded content" : "Authorized workflow", at: now });
       if (changed?.officerId) s.notifications.push({ id: this.uuid(), userId: changed.officerId, caseId: changed.id, title: `Case updated: ${changed.subject}`, at: now, readAt: null });
+      if (changed) {
+        const changedCase = changed;
+        for (const linked of s.relationships.filter((r) => r.status === "CONFIRMED" && (r.sourceId === changedCase.id || r.targetId === changedCase.id))) {
+          const other = s.cases.find((c) => c.id === (linked.sourceId === changedCase.id ? linked.targetId : linked.sourceId));
+          const recipient = s.staff.find((u) => u.id === other?.officerId && u.active);
+          if (other && recipient && canRead(s, recipient, other, now) && canRead(s, recipient, changedCase, now))
+            s.notifications.push({ id: this.uuid(), userId: recipient.id, caseId: other.id, title: `Linked ${linked.type.toLowerCase()} case updated: #${changedCase.caseNumber}`, at: now, readAt: null });
+        }
+      }
       const result: CommandResult = { entityId, revision: s.revision, invalidates: ["registry", "dashboard", "calendar", "case", "coordination", "notifications", "intelligence"] };
       s.receipts[key] = { input: serialized, result };
       return result;

@@ -1,0 +1,1 @@
+export const platformSections = [["dashboard", "Overview"], ["cases", "Case registry"], ["kanban", "Case workflow"], ["graph", "Relationship graph"], ["intake", "Intake review"], ["tasks", "Work items"], ["calendar", "Calendar"], ["coordination", "Coordination"], ["intelligence", "Intelligence"], ["notifications", "Notifications"], ["reports", "Reports"]] as const;

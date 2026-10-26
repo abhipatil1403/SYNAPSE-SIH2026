@@ -31,4 +31,6 @@ jobs:
       - run: npm run lint
       # Never load operator variables or connect this job to hosted Supabase.
       - run: npm run test:database:platform
+      - run: npm run test:database:auth
+      - run: npm run test:database:sla
       - run: npm run build

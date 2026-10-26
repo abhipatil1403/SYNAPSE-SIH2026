@@ -82,3 +82,6 @@ The new `/platform` workspace and `/api/phase1/platform/*` contracts remain lock
 ```powershell
 npm.cmd run test:database:platform
 ```
+# Current officer-auth milestone
+
+Real Supabase officer login is available at `/login` when the restricted gateway runtime configuration is loaded. Email identity and Bureau approval are separate. Global Live Mode, persistent read preview and business writes remain off. See [Phase 6–7 report](docs/phase6-7/REPORT.md) and [operator setup](docs/phase6-7/OPERATOR_SETUP.md) for verified scope, remaining email/administrator prerequisites and exact commands. Historical Phase 2 direct-browser read RPC execution has been revoked through an application-owned gateway correction; do not run the old direct-RPC verifier as a current activation test.

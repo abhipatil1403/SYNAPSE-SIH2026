@@ -19,6 +19,8 @@ export function phase1Config(options: { requirePreview?: boolean } = {}) {
       throw new Error("Missing client configuration");
     const project = new URL(url),
       origin = new URL(appOrigin);
+    if (process.env.SYNAPSE_GATEWAY_DATABASE_URL && project.hostname !== "xjnukuerzlrxjjqwmgkn.supabase.co")
+      throw new Error("Gateway and Auth project must match");
     if (
       project.protocol !== "https:" &&
       !["localhost", "127.0.0.1"].includes(project.hostname)

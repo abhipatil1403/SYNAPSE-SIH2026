@@ -41,8 +41,10 @@ await admin.query(`CREATE DATABASE ${name}`);
 parsed.pathname = "/" + name;
 const db = new pg.Client({ connectionString: parsed.toString() });
 const results = [];
-const platform = process.argv.includes("--platform");
-const phase2 = process.argv.includes("--phase2") || platform;
+const sla = process.argv.includes("--sla");
+const platform = process.argv.includes("--platform") || sla;
+const auth = process.argv.includes("--auth");
+const phase2 = process.argv.includes("--phase2") || platform || auth;
 try {
   await db.connect();
   await db.query(`
@@ -161,7 +163,9 @@ try {
     "Baseline refuses replay into an existing schema without resetting it.",
   );
   for (const file of (await readdir("supabase/migrations"))
-    .filter((f) => f.endsWith(".sql") && (phase2 || !f.includes("phase2_")))
+    // Historical authorization suites run against their own migration boundary;
+    // the gateway correction and its inverse direct-RPC assertions run afterward.
+    .filter((f) => f.endsWith(".sql") && !f.includes("phase6_") && (phase2 || !f.includes("phase2_")))
     .sort()) {
     await db.query("BEGIN");
     try {
@@ -244,6 +248,26 @@ try {
     results.push("LOCAL CANDIDATE: provider-session deletion, different-subject session, provider expiry and helper grants pass; no hosted migration applied.");
     const { verifyLocalPlatform } = await import("./phase3-5/local-platform.ts");
     results.push(...await verifyLocalPlatform(db));
+    if (sla) {
+      await db.query("BEGIN");
+      try { await db.query(await readFile("supabase/candidates/20261026163237_phase7_scoped_sla_worker.sql", "utf8")); await db.query("COMMIT"); }
+      catch (error) { await db.query("ROLLBACK"); throw error; }
+      const { verifySlaWorker } = await import("./phase6-7/local-sla.ts");
+      results.push(...await verifySlaWorker(db));
+    }
+  }
+  if (auth) {
+    await db.query("BEGIN");
+    try {
+      await db.query(await readFile("supabase/candidates/20261026155044_phase6_server_auth_gateway.sql", "utf8"));
+      await db.query(await readFile("supabase/candidates/20261026161408_phase6_approval_authority_lock.sql", "utf8"));
+      await db.query(await readFile("supabase/candidates/20261026165409_phase6_officer_bureau_scope.sql", "utf8"));
+      await db.query(await readFile("supabase/candidates/20261026170514_phase6_approval_input_guard.sql", "utf8"));
+      await db.query(await readFile("supabase/candidates/20261026173434_phase6_admin_memberships.sql", "utf8"));
+      await db.query("COMMIT");
+    } catch (error) { await db.query("ROLLBACK"); throw error; }
+    const { verifyAuthGateway } = await import("./phase6-7/local-auth.ts");
+    results.push(...await verifyAuthGateway(db));
   }
   await mkdir(platform ? "docs/phase3-5" : phase2 ? "docs/phase2" : "docs/phase1", { recursive: true });
   const report = {
@@ -277,5 +301,7 @@ try {
   await admin.query("DROP ROLE IF EXISTS synapse_case_reader");
   if (phase2) await admin.query("DROP ROLE IF EXISTS synapse_session_revoker");
   if (platform) await admin.query("DROP ROLE IF EXISTS synapse_session_validator");
+  if (auth) await admin.query("DROP ROLE IF EXISTS synapse_web_gateway,synapse_account_manager");
+  if (sla) await admin.query("DROP ROLE IF EXISTS synapse_sla_worker");
   await admin.end();
 }

@@ -43,6 +43,8 @@ test("MOCKED platform UI uses the real isolated engine for filtering, detail com
   await expect(page.getByText("Total Complaints", { exact: true })).toBeVisible();
   await expect(page.getByText("comment.add", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Calendar", exact: true }).click();
+  await expect(page).toHaveURL(/\/platform\/calendar$/);
+  await expect(page.getByRole("heading", { name: "Calendar", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Next month" }).click();
   await page.getByRole("button", { name: "Previous month" }).click();
   await page.getByRole("button", { name: "Today", exact: true }).click();
@@ -96,4 +98,28 @@ test("MOCKED platform clears prior records after authorization is lost", async (
   revoked = true; await page.getByRole("button", { name: "Refresh data" }).click();
   await expect(page.getByRole("heading", { name: "Authorized data unavailable" })).toBeVisible();
   await expect(page.getByText("Isolated complaint 1", { exact: true })).toHaveCount(0);
+});
+
+test("MOCKED Kanban transition commits through the engine and scoped graph supports filtering and navigation", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(now));
+  const engine = new PlatformEngine(new MemoryTransactionStore(platformFixture()), () => now);
+  await page.route("**/api/phase1/platform/**", async (route) => {
+    try { await route.fulfill({ json: route.request().method() === "POST" ? await engine.execute(principal(), route.request().postDataJSON()) : await engine.snapshot(principal()), headers: { "X-Synapse-Data-Source": "MOCKED - isolated workflow fixture" } }); }
+    catch { await route.fulfill({ status: 409, json: { error: { message: "Isolated command rejected" } } }); }
+  });
+  await page.goto("/platform/kanban");
+  const card = page.locator("article").filter({ hasText: "Isolated complaint 1" });
+  await card.getByLabel("Transition reason").fill("Explicit isolated workflow review");
+  await card.getByRole("button", { name: "Apply transition" }).click();
+  await expect(card.getByText("NORMAL · Version 2", { exact: true })).toBeVisible();
+  expect((await engine.snapshot(principal())).cases.find((c) => c.id === fixtureId(21))?.status).toBe("ASSIGNED");
+  await page.getByRole("link", { name: "Relationship graph", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Authorized case relationship graph" })).toBeVisible();
+  await expect(page.locator(".react-flow__node").filter({ hasText: "Isolated complaint 2" })).toHaveCount(0);
+  await page.locator(".react-flow__node").filter({ hasText: "Isolated complaint 1" }).click();
+  await expect(page.getByRole("link", { name: "Open authorized case" })).toHaveAttribute("href", "/platform/cases/" + fixtureId(21));
+  await page.getByLabel("Filter graph").fill("no matching case");
+  await expect(page.getByText("No authorized graph nodes match this filter.")).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 1000 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
 });

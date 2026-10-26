@@ -1,5 +1,6 @@
 // Only fixed catalog queries; no user data, passwords, JWTs or database URL in reports.
 export async function inspectSecurity(db) {
+  const gateway = (await db.query("SELECT to_regprocedure('synapse_gateway.read(jsonb,text,jsonb)') IS NOT NULL enabled")).rows[0].enabled;
   const { rows } =
     await db.query(`SELECT p.proname,p.proowner::regrole::text owner,p.prosecdef,p.proconfig,
     r.rolcanlogin,r.rolinherit,r.rolbypassrls,
@@ -36,7 +37,7 @@ export async function inspectSecurity(db) {
     facts.reader_no_writes && facts.reader_no_inherited_roles;
   const grants =
     rows.length === 2 &&
-    rows.every((r) => !r.anon && r.authenticated && !r.service_role && !r.unexpected_execute_grants) &&
+    rows.every((r) => !r.anon && r.authenticated === !gateway && !r.service_role && !r.unexpected_execute_grants) &&
     facts.private_schema && facts.api_cannot_assume_reader;
   return {
     checkedAt: new Date().toISOString(),
@@ -55,7 +56,7 @@ export async function inspectSecurity(db) {
         id: "rpc_execution_grants",
         status: grants ? "pass" : "fail",
         detail: grants
-          ? "Only signed-in users can invoke read RPCs; private schema remains inaccessible."
+          ? gateway ? "Direct API read execution is revoked; only the private server gateway may enter protected reads." : "Only signed-in users can invoke read RPCs; private schema remains inaccessible."
           : "An unexpected API grant or schema privilege was observed.",
         source: "Current effective PostgreSQL grants",
       },

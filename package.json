@@ -14,6 +14,8 @@
     "test:database": "node scripts/test-database.mjs",
     "test:database:phase2": "node scripts/test-database.mjs --phase2",
     "test:database:platform": "node --import tsx scripts/test-database.mjs --platform",
+    "test:database:auth": "node --import tsx scripts/test-database.mjs --auth",
+    "test:database:sla": "node --import tsx scripts/test-database.mjs --sla",
     "phase2:audit": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase2/hosted-audit.mjs",
     "phase2:provision:check": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase2/provision.mjs",
     "phase2:test:auth": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase2/verify-auth.mjs"
