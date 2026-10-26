@@ -72,6 +72,7 @@ Safe hosted read-only audit reconfirmed the three applied migrations, all 30 ori
 | Typecheck/lint/build | **PASS**; Next route type generation, zero lint warnings and optimized production build |
 | Baseline/hash verification | **PASS**; exact baseline and staged artifact hashes preserved |
 | Disposable PostgreSQL | **PASS**; 69 original assertions + local candidate checks + five persisted-workflow scenario groups |
+| GitHub Linux CI | **PASS** at `e9858d0`; unit/type/lint/baseline/disposable PostgreSQL/build, [run 40348200638](https://github.com/abhipatil1403/SYNAPSE-SIH2026/actions/runs/40348200638); current-head status in PR Checks |
 | Hosted catalog/integrity/original expiry | **PASS** read-only; all three applied migrations, 30 original functions and original schema preserved |
 | Managed advisor | **PASS — call executed with warnings**, not a clean security sign-off |
 | Candidate hosted application | **BLOCKED — missing authorized managed owner/approval**; NOT RUN |
@@ -106,6 +107,8 @@ The supplied remote was empty, and this workspace had no `.git` metadata. It was
 | `42426ae` | Preserved existing prototype and Phase 1–2 security work; pushed as initial `main` |
 | `af8a384` | Gated contracts/engine/mappings, security candidate, isolated Postgres tests, CI and exact baseline-byte handling |
 | `b58c49c` | Gated platform workspace and browser-tested intake/dashboard flow |
+| `e467370` | Session-cookie boundary integration, stale-response clearing and verified report |
+| `e9858d0` | Portable exact catalog comparisons; remote Linux CI passed |
 
 Feature branch push/PR evidence is recorded in [GITHUB_DELIVERY.md](GITHUB_DELIVERY.md) after remote confirmation. The commits above are real local commits; push and PR creation are not inferred from them.
 
