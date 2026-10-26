@@ -4,6 +4,19 @@ import { readFile, writeFile, readdir, mkdir } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
 import {inspectSecurity} from './phase2/security.mjs';
 
+// Catalog row ordering depends on the database's OS/locale collation. Compare
+// these unordered collections by stable identities, retaining every original
+// row field and all semantically ordered arrays (notably table columns).
+function orderRows(rows, keys) {
+  return [...rows].sort((left, right) => {
+    for (const key of keys) {
+      if (left[key] < right[key]) return -1;
+      if (left[key] > right[key]) return 1;
+    }
+    return 0;
+  });
+}
+
 const root =
   process.env.SYNAPSE_TEST_DATABASE_URL ??
   "postgresql://postgres@127.0.0.1:55432/postgres";
@@ -101,42 +114,39 @@ try {
       t,
       `Baseline table ${t.name}`,
     );
+  for (const [collection, keys] of [
+    ["policies", ["schemaname", "tablename", "policyname"]],
+    ["constraints", ["table", "name"]],
+    ["indexes", ["name"]],
+    ["triggers", ["table", "name"]],
+    ["views", ["name"]],
+    ["sequences", ["name"]],
+    ["grants", ["kind", "object", "grantee", "privilege"]],
+  ]) {
+    assert.deepEqual(
+      orderRows(captured[collection], keys),
+      orderRows(baseline[collection], keys),
+      `Baseline ${collection}: exact definitions independent of catalog collation`,
+    );
+  }
   assert.deepEqual(
-    captured.policies,
-    baseline.policies,
-    "Baseline policy definitions",
+    Object.keys(captured.reference_data).sort(),
+    Object.keys(baseline.reference_data).sort(),
+    "Baseline reference collections",
   );
-  assert.deepEqual(
-    captured.constraints,
-    baseline.constraints,
-    "Baseline constraint definitions",
-  );
-  assert.deepEqual(
-    captured.indexes,
-    baseline.indexes,
-    "Baseline index definitions",
-  );
-  assert.deepEqual(
-    captured.triggers,
-    baseline.triggers,
-    "Baseline trigger definitions",
-  );
-  assert.deepEqual(captured.views, baseline.views, "Baseline view definitions");
-  assert.deepEqual(
-    captured.sequences,
-    baseline.sequences,
-    "Baseline sequence configuration",
-  );
-  assert.deepEqual(
-    captured.grants,
-    baseline.grants,
-    "Baseline privilege grants",
-  );
-  assert.deepEqual(
-    captured.reference_data,
-    baseline.reference_data,
-    "Baseline reference data",
-  );
+  for (const [collection, keys] of [
+    ["roles", ["role_id"]],
+    ["permissions", ["permission_id"]],
+    ["role_permissions", ["role_id", "permission_id"]],
+    ["case_statuses", ["status_code"]],
+    ["case_relationship_types", ["relationship_type"]],
+  ]) {
+    assert.deepEqual(
+      orderRows(captured.reference_data[collection], keys),
+      orderRows(baseline.reference_data[collection], keys),
+      `Baseline reference data: ${collection}`,
+    );
+  }
   results.push(
     "Baseline: all tables, constraints, indexes, functions, policies, triggers, view and grants restored; exact table/function/policy/grant/reference comparison passed.",
   );

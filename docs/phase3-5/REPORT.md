@@ -77,7 +77,7 @@ Safe hosted read-only audit reconfirmed the three applied migrations, all 30 ori
 | Candidate hosted application | **BLOCKED — missing authorized managed owner/approval**; NOT RUN |
 | New hosted platform read/write workflows | **BLOCKED / NOT RUN**; missing reviewed RPC/RLS/storage/command package |
 | Hosted provider-only logout regression after candidate | **BLOCKED / NOT RUN** because candidate is unapplied; Phase 2 confirmed FAIL is retained |
-| External AI/scanner/delivery services | **NOT RUN — unsupported services remain disabled |
+| External AI/scanner/delivery services | **NOT RUN** — unsupported services remain disabled |
 
 Generated `verification-results.json` records completion timestamps and output hashes locally; sensitive/generated evidence remains ignored by Git. Latest command completion times (UTC):
 
@@ -112,6 +112,8 @@ Feature branch push/PR evidence is recorded in [GITHUB_DELIVERY.md](GITHUB_DELIV
 Actual env files, certificates, passwords, JWTs, screenshots, local logs and generated security receipts are ignored. Staged bytes are scanned for configured private values and approved emails before commits; baseline bytes are checked against the original SHA manifest. `.gitattributes` prevents Git from normalizing the mixed source-function line endings in the captured baseline SQL. The restoration is byte preservation, not a deployed schema change.
 
 The GitHub workflow runs only local unit/type/lint/build/disposable Postgres checks, with no hosted operator secrets. Its remote execution result is separate from local evidence and must not be assumed passing merely because a push succeeded.
+
+The first Linux CI run failed at baseline collection ordering: `en_US.utf8` ordered names such as `cases` and `case_statuses` differently from the captured catalog. The harness now sorts unordered catalog/reference rows by their identities before exact comparison. It retains every definition, grant, reference value and ordered table-column array; the captured SQL/catalog bytes and their hashes are unchanged. The complete disposable PostgreSQL suite passed again locally after this portability correction. Current remote CI evidence is recorded in [GITHUB_DELIVERY.md](GITHUB_DELIVERY.md).
 
 ## Remaining activation blockers and next steps
 
