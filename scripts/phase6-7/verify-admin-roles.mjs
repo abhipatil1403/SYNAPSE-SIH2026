@@ -42,6 +42,8 @@ safeMain(async()=>{
   const form=section.locator('form').first();await form.getByLabel('Role review reason').fill('Actual browser review retains exact current role and expiry');
   const response=await Promise.all([page.waitForResponse(r=>r.url()===origin+'/api/auth/role'&&r.request().method()==='POST'),form.getByRole('button',{name:'Commit role review',exact:true}).click()]);assert.equal(response[0].status(),200);
   await page.getByText('Role review committed and audited.',{exact:true}).waitFor();assert.equal(await snapshot(),original);
+  for(const width of [1440,768,390]){await page.setViewportSize({width,height:1000});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));}
+  await page.setViewportSize({width:1440,height:1000});
   pass('hosted_role_form_preserves_records','Real administrator browser form committed and audited an unchanged role/expiry; every original approved role record still matches its exact snapshot.');
   try{
    await db.query('UPDATE synapse.user_role_assignments SET valid_until=clock_timestamp() WHERE user_role_assignment_id=$1',[role.user_role_assignment_id]);
