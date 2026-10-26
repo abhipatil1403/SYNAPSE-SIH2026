@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint app components lib tests --max-warnings 0",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "test:e2e": "playwright test",
     "baseline:check": "node scripts/baseline.mjs --check",

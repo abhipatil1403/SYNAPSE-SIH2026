@@ -74,3 +74,11 @@ Current release decision: [Phase 2 security sign-off](docs/phase2/SECURITY_SIGNO
 - Browser captures are generated in `docs/screenshots/`; failed-test artifacts go to ignored `test-results/`.
 
 This is a functional local prototype, not a production deployment or a completed government integration.
+
+## Gated Phase 3–5 milestone
+
+The new `/platform` workspace and `/api/phase1/platform/*` contracts remain locked by the Phase 2 NO-GO. See [implementation/report](docs/phase3-5/REPORT.md), [API contracts](docs/phase3-5/API_CONTRACTS.md) and [owner-required unapplied session candidate](docs/phase3-5/SESSION_REMEDIATION.md). Offline workflows are tested with explicit isolated fixtures and the disposable PostgreSQL harness; hosted platform writes are not enabled.
+
+```powershell
+npm.cmd run test:database:platform
+```

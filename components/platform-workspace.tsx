@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Network, ShieldCheck, RefreshCw, ArrowLeft, ArrowRight, LockKeyhole } from "lucide-react";
 import { snapshotSchema, type Snapshot, type Command, type PlatformCase } from "@/lib/platform/contracts";
 import { platformDashboard, platformCalendar, registry, authorizedReport } from "@/lib/platform/selectors";
@@ -14,12 +14,17 @@ export function PlatformWorkspace({ path }: { path: string[] }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null), [status, setStatus] = useState<Status>("loading"), [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false), [q, setQ] = useState(""), [filter, setFilter] = useState(""), [page, setPage] = useState(1), [period, setPeriod] = useState(30);
   const [source, setSource] = useState("Authorized Supabase contract");
+  const generation = useRef(0), active = useRef<AbortController | null>(null);
   const today = calendarDayKey(new Date()), [month, setMonth] = useState(today.slice(0, 7)), [day, setDay] = useState(today);
   const load = useCallback(async (signal?: AbortSignal) => {
+    active.current?.abort();
+    const controller = new AbortController(), requestGeneration = ++generation.current;
+    active.current = controller;
+    const requestSignal = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal;
     try {
-      const response = await fetch("/api/platform/snapshot", { cache: "no-store", signal });
+      const response = await fetch("/api/phase1/platform/snapshot", { cache: "no-store", signal: requestSignal });
       const body = await response.json();
-      if (signal?.aborted) return;
+      if (requestSignal.aborted || generation.current !== requestGeneration) return;
       if (!response.ok) {
         setSnapshot(null); setMessage(body?.error?.message ?? "The authorized service is unavailable.");
         setStatus(response.status === 503 && body?.error?.code === "platform_locked" ? "locked" : "error"); return;
@@ -27,19 +32,22 @@ export function PlatformWorkspace({ path }: { path: string[] }) {
       setSnapshot(snapshotSchema.parse(body)); setSource(response.headers.get("X-Synapse-Data-Source") ?? "Authorized Supabase contract");
       setStatus("ready"); setMessage("");
     } catch {
-      if (!signal?.aborted) { setSnapshot(null); setStatus("error"); setMessage("The protected data contract could not be verified. Retry when access is available."); }
+      if (!requestSignal.aborted && generation.current === requestGeneration) { setSnapshot(null); setStatus("error"); setMessage("The protected data contract could not be verified. Retry when access is available."); }
     }
   }, []);
-  useEffect(() => { const c = new AbortController(); queueMicrotask(() => { if (!c.signal.aborted) void load(c.signal); }); return () => c.abort(); }, [load]);
+  useEffect(() => { const c = new AbortController(); queueMicrotask(() => { if (!c.signal.aborted) void load(c.signal); }); return () => { c.abort(); active.current?.abort(); }; }, [load]);
   useEffect(() => {
     const refresh = () => { if (document.visibilityState === "visible") void load(); };
     window.addEventListener("focus", refresh); document.addEventListener("visibilitychange", refresh);
-    return () => { window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
+    const timer = window.setInterval(refresh, 30000);
+    const channel = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel("synapse-auth-session");
+    if (channel) channel.onmessage = () => { active.current?.abort(); setSnapshot(null); setStatus("loading"); void load(); };
+    return () => { window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); window.clearInterval(timer); channel?.close(); };
   }, [load]);
   const command = async (cmd: Command, key: string) => {
     setBusy(true); setMessage("");
     try {
-      const r = await fetch("/api/platform/commands", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idempotencyKey: key, command: cmd }) });
+      const r = await fetch("/api/phase1/platform/commands", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idempotencyKey: key, command: cmd }) });
       const body = await r.json();
       if (!r.ok) { setMessage(body?.error?.message ?? "The operation could not be committed."); return false; }
       await load(); return true;

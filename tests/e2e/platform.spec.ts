@@ -9,8 +9,8 @@ test("platform stays locked, rejects live writes and never hydrates Demo identit
   expect(await page.evaluate(() => localStorage.getItem("synapse.demo.v1"))).toBeNull();
   expect(await page.getByRole("combobox", { name: "Demo role" }).count()).toBe(0);
   for (const path of ["snapshot", "dashboard", "calendar", "cases", "cases/" + fixtureId(21), "reports"])
-    expect((await request.get("/api/platform/" + path)).status()).toBe(503);
-  const write = await request.post("/api/platform/commands", { data: { actor: "Admin", type: "dispose" }, headers: { "x-enable-live": "true" } });
+    expect((await request.get("/api/phase1/platform/" + path)).status()).toBe(503);
+  const write = await request.post("/api/phase1/platform/commands", { data: { actor: "Admin", type: "dispose" }, headers: { "x-enable-live": "true" } });
   expect(write.status()).toBe(503); expect((await write.json()).error.code).toBe("business_writes_locked");
   await page.getByRole("link", { name: "Open working Demo Mode" }).click();
   await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
@@ -19,7 +19,7 @@ test("platform stays locked, rejects live writes and never hydrates Demo identit
 test("MOCKED platform UI uses the real isolated engine for filtering, detail commands, shared calendar and dashboard refresh", async ({ page }) => {
   await page.clock.setFixedTime(new Date(now));
   const engine = new PlatformEngine(new MemoryTransactionStore(platformFixture()), () => now);
-  await page.route("**/api/platform/**", async (route) => {
+  await page.route("**/api/phase1/platform/**", async (route) => {
     try {
       const body = route.request().method() === "POST" ? await engine.execute(principal(), route.request().postDataJSON()) : await engine.snapshot(principal());
       await route.fulfill({ json: body, headers: { "X-Synapse-Data-Source": "MOCKED - isolated engine fixture", "Cache-Control": "no-store" } });
@@ -57,7 +57,7 @@ test("MOCKED platform UI uses the real isolated engine for filtering, detail com
 test("MOCKED verified intake registration updates the registry and Overview from one committed engine", async ({ page }) => {
   await page.clock.setFixedTime(new Date(now));
   const engine = new PlatformEngine(new MemoryTransactionStore(platformFixture()), () => now);
-  await page.route("**/api/platform/**", async (route) => {
+  await page.route("**/api/phase1/platform/**", async (route) => {
     try {
       const data = route.request().method() === "POST" ? await engine.execute(principal(3), route.request().postDataJSON()) : await engine.snapshot(principal(3));
       await route.fulfill({ json: data, headers: { "X-Synapse-Data-Source": "MOCKED - isolated intake engine" } });
@@ -87,7 +87,7 @@ test("MOCKED verified intake registration updates the registry and Overview from
 test("MOCKED platform clears prior records after authorization is lost", async ({ page }) => {
   let revoked = false;
   const engine = new PlatformEngine(new MemoryTransactionStore(platformFixture()), () => now);
-  await page.route("**/api/platform/snapshot", async (route) => {
+  await page.route("**/api/phase1/platform/snapshot", async (route) => {
     if (revoked) await route.fulfill({ status: 401, json: { error: { message: "Authorization revoked" } } });
     else await route.fulfill({ json: await engine.snapshot(principal()) });
   });
