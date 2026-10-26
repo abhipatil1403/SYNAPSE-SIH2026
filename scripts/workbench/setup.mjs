@@ -23,7 +23,12 @@ safeMain(async()=>{
  if(!/^synapse_workbench_[a-f0-9]{12}$/.test(plan.database))throw Error('UNAPPROVED_LOCAL_DATABASE');
  if(!await exists(resolve(data,'PG_VERSION'))){
   const passwordFile=resolve(folder,'init-password.txt');await writeFile(passwordFile,plan.operatorPassword+'\n');
-  try{stage='private_password_acl';privateAcl(passwordFile);stage='initialize_cluster';execFileSync('initdb.exe',['-D',data,'-U','postgres','--auth-host=scram-sha-256','--auth-local=trust','--pwfile='+passwordFile,'--encoding=UTF8','--locale=C'],{stdio:'pipe',windowsHide:true});}finally{await unlink(passwordFile);}
+  try{
+   stage='private_password_acl';privateAcl(passwordFile);stage='initialize_cluster';
+   // These are option names and a private file path, never a password literal.
+   const initArgs=['-D',data,'-U','postgres','--auth-host','scram-sha-256','--auth-local','scram-sha-256','--pwfile',passwordFile,'--encoding','UTF8','--locale','C'];
+   execFileSync('initdb.exe',initArgs,{stdio:'pipe',windowsHide:true});
+  }finally{await unlink(passwordFile);}
  }
  stage='start_cluster';try{execFileSync('pg_ctl.exe',['-D',data,'status'],{stdio:'pipe',windowsHide:true});}
  catch{execFileSync('pg_ctl.exe',['-D',data,'-l',resolve(folder,'postgres.log'),'-o','-h 127.0.0.1 -p 55433','-w','start'],{stdio:'ignore',windowsHide:true});}
