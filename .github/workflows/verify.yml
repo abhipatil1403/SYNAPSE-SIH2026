@@ -1,0 +1,34 @@
+name: Verify gated SYNAPSE platform
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  local-verification:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: ${{ github.run_id }}
+        ports: ["55432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      NEXT_PUBLIC_APP_MODE: demo
+      SYNAPSE_PHASE1_READ_ENABLED: "false"
+      SYNAPSE_TEST_DATABASE_URL: postgresql://postgres:${{ github.run_id }}@127.0.0.1:55432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run baseline:check
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run lint
+      # Never load operator variables or connect this job to hosted Supabase.
+      - run: npm run test:database:platform
+      - run: npm run build

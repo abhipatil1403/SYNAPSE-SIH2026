@@ -1,0 +1,11 @@
+{
+  "file": "supabase/candidates/20261026140913_phase3_verified_session_liveness.sql",
+  "sha256": "85ac5c3318740f3f008a80a87cc9bd28efcf6ab6e93947bed2aa7cb6f8d789b3",
+  "status": "PREPARED_UNAPPLIED",
+  "managedOwnerApproval": false,
+  "hostedApplied": false,
+  "localSimulatedLivenessTestsPassed": true,
+  "localEvidence": "local-database-results.json (ignored generated evidence)",
+  "rollback": "SESSION_REMEDIATION.md",
+  "activation": "BLOCKED: Phase 2 NO-GO remains binding"
+}

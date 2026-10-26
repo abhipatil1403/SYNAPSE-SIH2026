@@ -1,0 +1,5 @@
+# Captured schema artifacts include source function line endings in their hashes.
+# Preserve exact bytes on every platform; never normalize deployed SQL history.
+supabase/baseline/* -text
+supabase/migrations/*.sql -text
+supabase/candidates/*.sql -text

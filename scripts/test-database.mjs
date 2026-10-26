@@ -28,7 +28,8 @@ await admin.query(`CREATE DATABASE ${name}`);
 parsed.pathname = "/" + name;
 const db = new pg.Client({ connectionString: parsed.toString() });
 const results = [];
-const phase2 = process.argv.includes("--phase2");
+const platform = process.argv.includes("--platform");
+const phase2 = process.argv.includes("--phase2") || platform;
 try {
   await db.connect();
   await db.query(`
@@ -221,7 +222,20 @@ try {
   results.push(
     "All fixtures rolled back, database gate remains disabled, and case-number sequence is unchanged.",
   );
-  await mkdir(phase2 ? "docs/phase2" : "docs/phase1", { recursive: true });
+  if (platform) {
+    // Managed session semantics are simulated only in this disposable database.
+    await db.query("CREATE TABLE auth.sessions(id uuid PRIMARY KEY,user_id uuid NOT NULL,not_after timestamptz,refresh_token text); ALTER TABLE auth.sessions ENABLE ROW LEVEL SECURITY");
+    await db.query("BEGIN");
+    try {
+      await db.query(await readFile("supabase/candidates/20261026140913_phase3_verified_session_liveness.sql", "utf8"));
+      await db.query("COMMIT");
+    } catch (error) { await db.query("ROLLBACK"); throw error; }
+    await db.query(await readFile("supabase/tests/phase3-session-liveness.sql", "utf8"));
+    results.push("LOCAL CANDIDATE: provider-session deletion, different-subject session, provider expiry and helper grants pass; no hosted migration applied.");
+    const { verifyLocalPlatform } = await import("./phase3-5/local-platform.ts");
+    results.push(...await verifyLocalPlatform(db));
+  }
+  await mkdir(platform ? "docs/phase3-5" : phase2 ? "docs/phase2" : "docs/phase1", { recursive: true });
   const report = {
     checkedAt: new Date().toISOString(),
     postgres: (await db.query("show server_version")).rows[0].server_version,
@@ -238,7 +252,7 @@ try {
     results,
   };
   await writeFile(
-    phase2
+    platform ? "docs/phase3-5/local-database-results.json" : phase2
       ? "docs/phase2/local-database-results.json"
       : "docs/phase1/local-database-results.json",
     JSON.stringify(report, null, 2) + "\n",
@@ -252,5 +266,6 @@ try {
   await admin.query(`DROP DATABASE ${name} WITH (FORCE)`);
   await admin.query("DROP ROLE IF EXISTS synapse_case_reader");
   if (phase2) await admin.query("DROP ROLE IF EXISTS synapse_session_revoker");
+  if (platform) await admin.query("DROP ROLE IF EXISTS synapse_session_validator");
   await admin.end();
 }
