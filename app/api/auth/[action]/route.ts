@@ -8,6 +8,7 @@ import { Phase1Error } from "@/lib/live/service";
 import { parseCaseQuery } from "@/lib/live/contracts";
 import { endSession } from "@/lib/live/session";
 import { requireSameOrigin, smallJson } from "@/lib/live/request";
+import { roleReviewSchema, roleAssignmentsSchema } from "@/lib/auth/administration";
 export const runtime = "nodejs";
 function providerFailure(error: { status?: number } | null, login = false) {
   if (error) throw new Phase1Error(error.status === 429 ? 429 : error.status && error.status >= 500 ? 503 : login ? 401 : 400,
@@ -17,10 +18,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   let ctx: ReturnType<typeof authContext> | undefined;
   try {
     ctx = authContext(request); const { action } = await params;
-    if (!["session", "approvals", "memberships", "cases", "readiness"].includes(action)) return ctx.respond({ error: { message: "Route unavailable." } }, 404);
+    if (!["session", "approvals", "memberships", "roles", "cases", "readiness"].includes(action)) return ctx.respond({ error: { message: "Route unavailable." } }, 404);
     const resolved = await ctx.account();
     if (action === "readiness") return ctx.respond(await authReadiness());
     if (action === "memberships") return ctx.respond(await gateway("memberships", resolved.claims, "list"));
+    if (action === "roles") return ctx.respond(roleAssignmentsSchema.parse(await gateway("roles", resolved.claims, "list")));
     if (action === "cases") {
       if (resolved.account.status !== "APPROVED") throw new Phase1Error(403, "approval_required", "Officer approval is required.");
       if (process.env.SYNAPSE_PHASE1_READ_ENABLED !== "true") throw new Phase1Error(503, "preview_locked", "Live case access is awaiting security approval. Your verified account is active.");
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     ctx = authContext(request); requireSameOrigin(request, ctx.config.appOrigin);
     const { action } = await params;
-    if (!["login", "signup", "forgot-password", "reset-password", "logout", "refresh", "approval", "membership"].includes(action)) return ctx.respond({ error: { message: "Route unavailable." } }, 404);
+    if (!["login", "signup", "forgot-password", "reset-password", "logout", "refresh", "approval", "membership", "role"].includes(action)) return ctx.respond({ error: { message: "Route unavailable." } }, 404);
     if (action === "login") {
       const input = loginSchema.parse(await smallJson(request)); await throttle(request, "login", input.email);
       const { error } = await ctx.client.auth.signInWithPassword(input); providerFailure(error, true);
@@ -85,6 +87,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (action === "refresh") {
       const { error } = await ctx.client.auth.refreshSession(); if (error) ctx.clear(); providerFailure(error);
       const resolved = await ctx.account(); return ctx.respond({ account: resolved.account, destination: accountDestination(resolved.account), liveEnabled: false });
+    }
+    if (action === "role") {
+      const input = roleReviewSchema.parse(await smallJson(request)), identity = await ctx.verified();
+      return ctx.respond(await gateway("roles", identity.claims, "decide", input));
     }
     if (action === "membership") {
       const input = z.object({ requestId: z.uuid(), membershipId: z.uuid(), expectedUntil: z.iso.datetime({ offset: true }).nullable(),

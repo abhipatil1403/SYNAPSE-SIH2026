@@ -19,14 +19,14 @@ function database() {
   pool.on("error", () => { /* No URL/provider/user material is written to logs. */ });
   return pool;
 }
-export async function gateway(operation: "read" | "account" | "limit" | "memberships", claims: unknown, action: string, input: unknown = {}) {
+export async function gateway(operation: "read" | "account" | "limit" | "memberships" | "roles", claims: unknown, action: string, input: unknown = {}) {
   const connection = await database().connect();
   try {
     await connection.query("BEGIN");
     await connection.query("SET LOCAL ROLE synapse_web_gateway");
     const result = operation === "limit"
       ? await connection.query("SELECT synapse_gateway.limit_attempt($1,$2,$3) result", [action, (input as { limit: number }).limit, 900])
-      : await connection.query(operation === "read" ? "SELECT synapse_gateway.read($1,$2,$3) result" : operation === "memberships" ? "SELECT synapse_gateway.memberships($1,$2,$3) result" : "SELECT synapse_gateway.account($1,$2,$3) result", [JSON.stringify(claims), action, JSON.stringify(input)]);
+      : await connection.query(operation === "read" ? "SELECT synapse_gateway.read($1,$2,$3) result" : operation === "memberships" ? "SELECT synapse_gateway.memberships($1,$2,$3) result" : operation === "roles" ? "SELECT synapse_gateway.roles($1,$2,$3) result" : "SELECT synapse_gateway.account($1,$2,$3) result", [JSON.stringify(claims), action, JSON.stringify(input)]);
     await connection.query("COMMIT"); return result.rows[0].result as unknown;
   } catch (error) {
     await connection.query("ROLLBACK");
@@ -55,7 +55,7 @@ export async function authReadiness() {
       NOT has_schema_privilege(current_user,'synapse','USAGE') restricted_login,
       NOT pg_has_role(current_user,'synapse_case_reader','MEMBER') AND NOT pg_has_role(current_user,'synapse_account_manager','MEMBER') no_owner_assumption`)).rows[0];
     const checks = Object.entries(result).map(([id, value]) => ({ id, status: value === true ? "PASS" : "FAIL", source: "Current hosted database catalog" }));
-    for (const [file, id] of [["hosted-auth-results.json", "hosted-auth"], ["web-auth-results.json", "web-auth"], ["admin-reset-results.json", "email_delivery_and_recovery"]]) {
+    for (const [file, id] of [["hosted-auth-results.json", "hosted-auth"], ["web-auth-results.json", "web-auth"], ["admin-reset-results.json", "email_delivery_and_recovery"], ["admin-roles-results.json", "admin_role_management"]]) {
       try {
         const evidence = JSON.parse(await readFile(`docs/phase6-7/${file}`, "utf8"));
         const fresh = Date.now() - Date.parse(evidence.checkedAt) < 3600000 && Date.parse(evidence.checkedAt) <= Date.now();

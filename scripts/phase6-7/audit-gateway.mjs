@@ -10,7 +10,7 @@ safeMain(async()=>{
    has_function_privilege('anon',p.oid,'EXECUTE') anon,has_function_privilege('authenticated',p.oid,'EXECUTE') authenticated,
    has_function_privilege('service_role',p.oid,'EXECUTE') service_role,has_function_privilege('synapse_web_gateway',p.oid,'EXECUTE') gateway
    from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='synapse_gateway' order by p.proname`)).rows;
-  check('gateway_functions_fixed',functions.length===5&&functions.every(f=>f.prosecdef&&f.proconfig.includes('search_path=""')&&f.proconfig.includes('row_security=on')&&!f.anon&&!f.authenticated&&!f.service_role&&f.gateway===(f.proname!=='account_locked_impl')));
+  check('gateway_functions_fixed',functions.length===6&&functions.every(f=>f.prosecdef&&f.proconfig.includes('search_path=""')&&f.proconfig.includes('row_security=on')&&!f.anon&&!f.authenticated&&!f.service_role&&f.gateway===(f.proname!=='account_locked_impl')));
   check('function_owners_restricted',functions.every(f=>f.owner===(f.proname==='read'?'synapse_case_reader':'synapse_account_manager')));
   const roles=(await db.query(`select rolname,rolsuper,rolinherit,rolbypassrls,rolcreaterole,rolcreatedb,rolcanlogin,
     exists(select from pg_class where relowner=r.oid and relkind='r') owns_table from pg_roles r where rolname in('synapse_web_login','synapse_web_gateway','synapse_account_manager','synapse_case_reader')`)).rows;

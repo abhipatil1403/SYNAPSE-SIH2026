@@ -5,10 +5,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Network, ShieldCheck } from "lucide-react";
 import { accountSchema, type OfficerAccount } from "@/lib/auth/policy";
 import { casePageSchema, type LiveCase } from "@/lib/live/contracts";
+import { RoleAdministration } from "./role-administration";
+import { localExpiryValue, reviewedExpiry } from "@/lib/auth/administration";
 type Reply = { error?: { message?: string }; message?: string; destination?: string };
 async function post(action: string, body: unknown = {}): Promise<Reply> {
   const response = await fetch(`/api/auth/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store" });
-  const result = await response.json(); if (!response.ok) throw Error(result.error?.message ?? "The secure service is unavailable."); return result;
+  const result = await response.json(); if (!response.ok) { if ([401, 403].includes(response.status)) window.dispatchEvent(new Event("synapse-authority-check")); throw Error(result.error?.message ?? "The secure service is unavailable."); } return result;
 }
 export function OfficerWorkspace({ pending = false }: { pending?: boolean }) {
   const router = useRouter();
@@ -67,6 +69,39 @@ function OfficerReadiness() {
 }
 type Approval = { auth_user_id: string; email: string; display_name: string; status: string; revision: string; canDecide: boolean };
 export function OfficerAdministration() {
+  const router = useRouter();
+  const [access, setAccess] = useState<"loading" | "approved" | "unavailable">("loading");
+  const [message, setMessage] = useState("");
+  useEffect(() => {
+    let generation = 0, active: AbortController | undefined, stopped = false;
+    const check = async () => {
+      active?.abort(); active = new AbortController(); const signal = active.signal, current = ++generation;
+      try {
+        const response = await fetch("/api/auth/session", { cache: "no-store", signal }), body = await response.json();
+        if (stopped || signal.aborted || current !== generation) return;
+        if (response.status === 401) { setAccess("unavailable"); router.replace("/login"); router.refresh(); return; }
+        if (!response.ok) throw Error("Current administrator authority could not be verified.");
+        const account = accountSchema.parse(body.account);
+        if (account.status !== "APPROVED" || !account.roles.includes("SYSTEM_ADMIN")) {
+          setAccess("unavailable"); router.replace(account.status === "APPROVED" ? "/officer/dashboard" : "/pending-approval"); router.refresh(); return;
+        }
+        setAccess("approved"); setMessage("");
+      } catch { if (!stopped && !signal.aborted && current === generation) { setAccess("unavailable"); setMessage("Administrator access is unavailable. Private account records have been cleared."); } }
+    };
+    const refresh = () => { if (document.visibilityState === "visible") void check(); };
+    const signedOut = () => { ++generation; active?.abort(); setAccess("unavailable"); router.replace("/login"); router.refresh(); };
+    const channels = ["synapse-officer-session", "synapse-auth-session"].map((name) => new BroadcastChannel(name));
+    for (const channel of channels) channel.onmessage = signedOut;
+    const timer = window.setInterval(refresh, 30000);
+    window.addEventListener("focus", refresh); window.addEventListener("synapse-authority-check", refresh); document.addEventListener("visibilitychange", refresh);
+    queueMicrotask(() => { if (!stopped) void check(); });
+    return () => { stopped = true; ++generation; active?.abort(); clearInterval(timer); for (const channel of channels) channel.close(); window.removeEventListener("focus", refresh); window.removeEventListener("synapse-authority-check", refresh); document.removeEventListener("visibilitychange", refresh); };
+  }, [router]);
+  // Unmount every resource/form on denial. Late resource responses belong to
+  // discarded component instances and cannot restore private records.
+  return access === "approved" ? <OfficerAdministrationContent /> : <main className="officer-surface"><h1>Administrator access</h1><p role="status">{message || "Verifying current administrator authority…"}</p><Link href="/officer/dashboard">Return to officer workspace</Link></main>;
+}
+function OfficerAdministrationContent() {
   const [items, setItems] = useState<Approval[]>([]), [bureaus, setBureaus] = useState<{ id: string; name: string }[]>([]), [message, setMessage] = useState(""), [busy, setBusy] = useState(false);
   const load = useCallback(async () => { const response = await fetch("/api/auth/approvals", { cache: "no-store" }); const body = await response.json(); if (!response.ok) { setItems([]); throw Error(body.error?.message ?? "Approval access unavailable."); } setItems(body.requests); setBureaus(body.bureaus); }, []);
   useEffect(() => { let disposed = false; queueMicrotask(() => { if (!disposed) void load().catch((e) => { if (!disposed) setMessage(e.message); }); }); return () => { disposed = true; }; }, [load]);
@@ -76,7 +111,7 @@ export function OfficerAdministration() {
           ...(decision === "APPROVED" ? { bureauId: String(fields.get("bureau")), role: String(fields.get("role")), until: new Date(String(fields.get("until"))).toISOString() } : {}) });
         await load(); setMessage("The account decision was committed and audited.");
       } catch (error) { setMessage(error instanceof Error ? error.message : "Approval failed."); } finally { setBusy(false); }
-    }}><label>Decision<select name="decision">{(item.status === "PENDING" ? ["APPROVED", "REJECTED"] : ["SUSPENDED", "REVOKED"]).map((d) => <option key={d}>{d}</option>)}</select></label><label>Bureau<select name="bureau">{bureaus.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label><label>Role<select name="role">{["CASE_OFFICER", "BUREAU_HEAD", "AUDITOR", "REVIEWER"].map((r) => <option key={r}>{r}</option>)}</select></label><label>Assignment expiry (required for approval, within 90 days)<input type="datetime-local" name="until" /></label><label>Decision reason<textarea name="reason" required minLength={5} maxLength={1000} /></label>{!item.canDecide && <p>Changes to your own account require independent administrator approval.</p>}<button className="btn primary" disabled={busy || !item.canDecide}>Commit reviewed decision</button></form></section>)}{!items.length && <p>No reviewable requests loaded.</p>}<MembershipAdministration /></main>;
+    }}><label>Decision<select name="decision">{(item.status === "PENDING" ? ["APPROVED", "REJECTED"] : ["SUSPENDED", "REVOKED"]).map((d) => <option key={d}>{d}</option>)}</select></label><label>Bureau<select name="bureau">{bureaus.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label><label>Role<select name="role">{["CASE_OFFICER", "BUREAU_HEAD", "AUDITOR", "REVIEWER"].map((r) => <option key={r}>{r}</option>)}</select></label><label>Assignment expiry (required for approval, within 90 days)<input type="datetime-local" name="until" /></label><label>Decision reason<textarea name="reason" required minLength={5} maxLength={1000} /></label>{!item.canDecide && <p>Changes to your own account require independent administrator approval.</p>}<button className="btn primary" disabled={busy || !item.canDecide}>Commit reviewed decision</button></form></section>)}{!items.length && <p>No reviewable requests loaded.</p>}<MembershipAdministration /><RoleAdministration /></main>;
 }
 type Membership = { id: string; userId: string; email: string; bureau: string; bureauId: string; validFrom: string; validUntil: string | null; canManage: boolean };
 function MembershipAdministration() {
@@ -89,8 +124,8 @@ function MembershipAdministration() {
 }
 function MembershipForm({ membership: m, busy, send }: { membership: Membership; busy: boolean; send: (body: unknown) => Promise<boolean> }) {
   const [revoke, setRevoke] = useState(false), [requestId, setRequestId] = useState(() => crypto.randomUUID());
-  const initial = m.validUntil ? new Date(new Date(m.validUntil).getTime() - new Date(m.validUntil).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "";
+  const initial = localExpiryValue(m.validUntil);
   return <article><h3>{m.email} · {m.bureau}</h3><p>Current expiry: {m.validUntil ?? "No expiry"}</p><form className="form-stack" onChange={() => setRequestId(crypto.randomUUID())} onSubmit={async (e) => {
-    e.preventDefault(); const data = new FormData(e.currentTarget); if (await send({ requestId, membershipId: m.id, expectedUntil: m.validUntil, revoke, reason: String(data.get("reason")), ...(!revoke ? { until: new Date(String(data.get("until"))).toISOString() } : {}) })) setRequestId(crypto.randomUUID());
-  }}><label><input type="checkbox" checked={revoke} onChange={(e) => setRevoke(e.target.checked)} /> Revoke membership</label><label>Reviewed expiry (your local time)<input type="datetime-local" name="until" defaultValue={initial} disabled={revoke} required={!revoke} /></label><label>Membership review reason<textarea name="reason" required minLength={5} maxLength={1000} /></label><button className="btn" disabled={busy || !m.canManage}>Commit membership review</button></form></article>;
+    e.preventDefault(); const data = new FormData(e.currentTarget); if (await send({ requestId, membershipId: m.id, expectedUntil: m.validUntil, revoke, reason: String(data.get("reason")), ...(!revoke ? { until: reviewedExpiry(String(data.get("until")), m.validUntil) } : {}) })) setRequestId(crypto.randomUUID());
+  }}><label><input type="checkbox" checked={revoke} onChange={(e) => setRevoke(e.target.checked)} /> Revoke membership</label><label>Reviewed expiry (your local time)<input type="datetime-local" step="0.001" name="until" defaultValue={initial} disabled={revoke} required={!revoke} /></label><label>Membership review reason<textarea name="reason" required minLength={5} maxLength={1000} /></label><button className="btn" disabled={busy || !m.canManage}>Commit membership review</button></form></article>;
 }

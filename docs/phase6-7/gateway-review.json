@@ -29,6 +29,13 @@
       "sha256": "5d602ed7b7cdd9e1705cfefe8ea2bf822230db099194d7002d58b6ff9c3f2635",
       "localAuthorizationPassed": true,
       "reason": "Independent administrator membership-window management with concurrency, idempotency, audit and no role-code changes."
+    },
+    {
+      "file": "20261026191333_phase6_admin_role_assignments.sql",
+      "sha256": "2f9482bde18f739d7d25a63f482668a95e2becdea5121cf2f65b71b90daf3eef",
+      "localAuthorizationPassed": true,
+      "hostedApplied": true,
+      "reason": "Independent bounded Bureau role review/replacement/revocation with current authority locks, membership bounds, optimistic checks, preserved history and idempotent audit; no officer roles changed by migration."
     }
   ]
 }

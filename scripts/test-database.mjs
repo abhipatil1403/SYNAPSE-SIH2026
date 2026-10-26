@@ -264,6 +264,7 @@ try {
       await db.query(await readFile("supabase/candidates/20261026165409_phase6_officer_bureau_scope.sql", "utf8"));
       await db.query(await readFile("supabase/candidates/20261026170514_phase6_approval_input_guard.sql", "utf8"));
       await db.query(await readFile("supabase/candidates/20261026173434_phase6_admin_memberships.sql", "utf8"));
+      await db.query(await readFile("supabase/candidates/20261026191333_phase6_admin_role_assignments.sql", "utf8"));
       await db.query("COMMIT");
     } catch (error) { await db.query("ROLLBACK"); throw error; }
     const { verifyAuthGateway } = await import("./phase6-7/local-auth.ts");

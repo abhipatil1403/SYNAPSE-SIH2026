@@ -12,6 +12,11 @@ test("real unauthenticated routes, CSRF, malformed identity and recovery replay 
   const protectedPage = await request.get("/officer/dashboard", { maxRedirects: 0 });
   expect(protectedPage.status()).toBe(307); expect(protectedPage.headers().location).toMatch(/\/login$/);
   expect((await request.get("/api/auth/session")).status()).toBe(401);
+  expect((await request.get("/api/auth/roles")).status()).toBe(401);
+  expect((await request.post("/api/auth/role", { headers: { Origin: "http://localhost:3000" }, data: {
+    requestId: "50000000-0000-4000-8000-000000000011", assignmentId: "50000000-0000-4000-8000-000000000012",
+    expectedRole: "CASE_OFFICER", expectedUntil: null, revoke: true, reason: "Anonymous role management must be denied",
+  } })).status()).toBe(401);
   expect((await request.post("/api/auth/login", { headers: { Origin: "https://attacker.invalid" }, data: {} })).status()).toBe(403);
   expect((await request.post("/api/auth/login", { headers: { Origin: "http://localhost:3000" }, data: { email: "local@example.invalid", password: "not-submitted-to-provider", role: "SYSTEM_ADMIN" } })).status()).toBe(400);
   expect((await request.post("/api/auth/reset-password", { headers: { Origin: "http://localhost:3000" }, data: { password: "unapplied-local-password" } })).status()).toBe(401);

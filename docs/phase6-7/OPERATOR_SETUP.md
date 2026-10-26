@@ -43,15 +43,18 @@ Do not paste email links, OTPs or credentials into a public issue/report. The ap
 
 The approved, verified third development account now has one audited GLOBAL SYSTEM_ADMIN assignment expiring on **2026-10-29 at 12:00 UTC**. It has no Bureau membership, no case role and no legacy global-case bypass flag. Neither existing officer was elevated. The operator bootstrap runs only after actual provider email verification and an approval-free Pending Approval login. It validates an ignored private approval plan and exact Auth UUID, refuses unexpected pre-existing authority and preserves the officers' assignments. This is explicit operator approval, not an email/name match or a browser-selected role.
 
-That administrator can visit `/officer-admin`. Approval requires a different actor, a current pending verified account, an active Bureau, an allowed scoped role, a 1-hour–90-day expiry and a recorded reason. Existing email/mapping collisions are rejected for explicit reconciliation. Suspension/revocation expires memberships/roles and records an immutable decision event. Role assignment information is included in approval audit detail. General role reassignment/reactivation beyond this workflow is not implemented or represented as complete.
+That administrator can visit `/officer-admin`. Approval requires a different actor, a current pending verified account, an active Bureau, an allowed scoped role, a 1-hour–90-day expiry and a recorded reason. Existing email/mapping collisions are rejected for explicit reconciliation. Suspension/revocation expires memberships/roles and records an immutable decision event. Role assignment information is included in approval audit detail. Reactivation of rejected/revoked accounts and global/regional role assignment remain outside the web workflow.
 
 The same page can review/revoke existing Bureau membership windows. Reviews require a reason, current expiry and idempotency key; they do not extend a role or change its code. The real hosted verification reviewed an officer's unchanged expiry, tested safe replay/conflict behavior and rendered the management controls. The separate acceptance flow of a newly pending officer being approved into a Bureau still requires another approved pending identity.
+
+The Bureau role section reviews/revokes current CASE_OFFICER, BUREAU_HEAD, AUDITOR and REVIEWER assignments. Changes require independent current administrator authority, expected role/expiry, reason and idempotency key. An expiry must fit a current membership; replacement preserves the expired assignment in history. Self/global/regional assignments and SYSTEM_ADMIN elevation are rejected. The administration page clears its account/member/role components when current authority is lost or another tab logs out. See [ROLE_MANAGEMENT_REVIEW.md](ROLE_MANAGEMENT_REVIEW.md).
 
 Operator-only reproduction helpers read approved identities/passwords from ignored plans and DPAPI vaults:
 
 ```powershell
 node --env-file=.env.local --env-file=.env.operator.local scripts/phase6-7/bootstrap-admin.mjs --bootstrap-verified-admin
 node --env-file=.env.local scripts/phase6-7/verify-admin-login.mjs
+node --env-file=.env.local --env-file=.env.operator.local scripts/phase6-7/verify-admin-roles.mjs
 node --env-file=.env.local --env-file=.env.gateway.local scripts/phase6-7/begin-admin-reset.mjs
 node --env-file=.env.local scripts/phase6-7/complete-admin-reset.mjs
 ```
