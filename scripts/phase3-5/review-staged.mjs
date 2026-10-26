@@ -14,11 +14,29 @@ try {
   const vault = await loadVault(".local/phase2/phase2-approved-officers.vault");
   let gateway = {};
   try { gateway = await loadVault(".local/phase2/auth-gateway.vault"); } catch { /* Optional before gateway provisioning. */ }
-  let admin = {}, reset = {};
+  let admin = {}, reset = {}, applicant = {}, applicantReset = {}, applicantAdmin = {};
   try { admin = await loadVault(".local/phase2/admin-onboarding.vault"); } catch { /* Optional before approved signup. */ }
   try { reset = await loadVault(".local/phase2/admin-reset.vault"); } catch { /* Optional before real recovery. */ }
+  try { applicant = await loadVault(".local/phase2/applicant-onboarding.vault"); } catch { /* Optional before approved applicant signup. */ }
+  try { applicantReset = await loadVault(".local/phase2/applicant-reset.vault"); } catch { /* Optional before applicant recovery. */ }
+  try { applicantAdmin = await loadVault(".local/phase2/applicant-admin-session.vault"); } catch { /* Optional approved administrator test session. */ }
+  let workbench={},gmail={};
+  try{workbench=await loadVault('.local/workbench/operator.vault');}catch{}
+  try{gmail=await loadVault('.local/workbench/gmail-oauth.vault');}catch{}
+  const integrationValues=[];
+  for(const path of ['.env.workbench.local','.env.integrations.local']){try{for(const line of (await readFile(path,'utf8')).split(/\r?\n/)){const match=line.match(/^([A-Z_]+)=(.+)$/);if(match&&/KEY|SECRET|TOKEN|DATABASE_URL|APPROVED_ADDRESS/.test(match[1]))integrationValues.push(match[2].trim().replace(/^['"]|['"]$/g,''));}}catch{}}
+  const privateLinks = [];
+  for (const path of [".local/phase2/applicant-confirm-link.txt", ".local/phase2/applicant-reset-link.txt"]) {
+    try { const raw = (await readFile(path, "utf8")).trim(); const link = new URL(raw.replaceAll("&amp;", "&")); privateLinks.push(raw, link.href, ...["token", "token_hash", "code"].map((key) => link.searchParams.get(key)).filter(Boolean)); } catch { /* Optional unopened actual mailbox link. */ }
+  }
+  // A recovery runner also stores public destinations such as /reset-password.
+  // Scan destinations only when they actually contain secret callback material.
+  const secretDestination=value=>typeof value==='string'&&/[?&#](?:code|token|token_hash|access_token|refresh_token)=/.test(value)?value:undefined;
   const privateValues = [process.env.SUPABASE_SECRET_KEY, process.env.DATABASE_URL, process.env.SYNAPSE_GATEWAY_DATABASE_URL,
     gateway.password, gateway.connectionString, gateway.rateSecret, admin.password, admin.email, reset.newPassword,
+    workbench.operatorPassword,workbench.runtimePassword,gmail.refreshToken,...integrationValues,
+    applicant.email, applicant.password, applicant.expiryProbe?.token, secretDestination(applicant.resumeDestination), applicantReset.newPassword, secretDestination(applicantReset.resumeDestination),...privateLinks,...(applicantAdmin.cookies ?? []).map(c=>c.value),
+    ...(applicant.cookies ?? []).map(c=>c.value),...(applicant.resumeCookies ?? []).map(c=>c.value),...(applicantReset.cookies ?? []).map(c=>c.value),...(applicantReset.resumeCookies ?? []).map(c=>c.value),
     ...(admin.cookies ?? []).map(c=>c.value),...(reset.cookies ?? []).map(c=>c.value),...(reset.resumeCookies ?? []).map(c=>c.value),vault.expiryProbe?.token,
     ...vault.accounts.flatMap((a) => [a.password, a.email])].filter(Boolean);
   let matches = 0;

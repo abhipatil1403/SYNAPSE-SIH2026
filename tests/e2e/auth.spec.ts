@@ -22,6 +22,7 @@ test("real unauthenticated routes, CSRF, malformed identity and recovery replay 
   expect((await request.post("/api/auth/reset-password", { headers: { Origin: "http://localhost:3000" }, data: { password: "unapplied-local-password" } })).status()).toBe(401);
   const callback = await request.get("/auth/callback?next=https://attacker.invalid&type=recovery", { maxRedirects: 0 });
   expect(callback.status()).toBe(303); expect(callback.headers().location).toBe("http://localhost:3000/login?callback=failed");
+  expect(callback.headers()["x-synapse-auth-stage"]).toBe("validation");
 });
 test("client reset confirmation validates locally; provider errors are displayed without false success", async ({ page }) => {
   await page.goto("/reset-password");

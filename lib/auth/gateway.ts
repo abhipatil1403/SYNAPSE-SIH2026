@@ -55,11 +55,14 @@ export async function authReadiness() {
       NOT has_schema_privilege(current_user,'synapse','USAGE') restricted_login,
       NOT pg_has_role(current_user,'synapse_case_reader','MEMBER') AND NOT pg_has_role(current_user,'synapse_account_manager','MEMBER') no_owner_assumption`)).rows[0];
     const checks = Object.entries(result).map(([id, value]) => ({ id, status: value === true ? "PASS" : "FAIL", source: "Current hosted database catalog" }));
-    for (const [file, id] of [["hosted-auth-results.json", "hosted-auth"], ["web-auth-results.json", "web-auth"], ["admin-reset-results.json", "email_delivery_and_recovery"], ["admin-roles-results.json", "admin_role_management"]]) {
+    for (const [file, id] of [["hosted-auth-results.json", "hosted-auth"], ["web-auth-results.json", "web-auth"], ["admin-reset-results.json", "email_delivery_and_recovery"], ["admin-roles-results.json", "admin_role_management"],
+      ["applicant-confirmation-results.json", "applicant_email_confirmation"], ["applicant-approval-results.json", "applicant_independent_approval"],
+      ["applicant-workflow-results.json", "applicant_authorization"], ["applicant-reset-results.json", "applicant_mailbox_recovery"], ["applicant-expiry-results.json", "applicant_jwt_expiry"]]) {
       try {
         const evidence = JSON.parse(await readFile(`docs/phase6-7/${file}`, "utf8"));
         const fresh = Date.now() - Date.parse(evidence.checkedAt) < 3600000 && Date.parse(evidence.checkedAt) <= Date.now();
         checks.push({ id, status: fresh && evidence.checks?.length > 0 && evidence.checks.every((c: { status: string }) => c.status === "PASS") ? "PASS" : "BLOCKED", source: `Recorded executed test evidence · ${evidence.checkedAt}` });
+        if (id === "applicant_email_confirmation") checks.push({ id: "applicant_signup_callback", status: fresh && evidence.automaticCallback === "PASS" ? "PASS" : "BLOCKED", source: "Automatic signup callback must be verified separately from mailbox confirmation and later password login" });
       } catch { checks.push({ id, status: "BLOCKED", source: "No current executed evidence is installed on this server" }); }
     }
     checks.push({ id: "production_email_policy", status: "BLOCKED", source: "Production SMTP, redirect, abuse-protection and delivery policy review still required" },
