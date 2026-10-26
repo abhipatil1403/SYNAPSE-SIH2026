@@ -1,0 +1,4 @@
+{
+  "indic_en": {"id":"ai4bharat/indictrans2-indic-en-dist-200M","revision":"d66a2122ad6d28184f3dc3797b652bd80ae3f65f","license":"MIT"},
+  "en_indic": {"id":"ai4bharat/indictrans2-en-indic-dist-200M","revision":"2cfd0a20057756d756bf3e53528f492afc52f91a","license":"MIT"}
+}

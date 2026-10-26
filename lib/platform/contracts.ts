@@ -20,7 +20,7 @@ export const caseSchema = z.object({ id, caseNumber: version, institutionId: id,
   receivedAt: at, updatedAt: at, disposedAt: at.nullable(), version, discoverable: z.boolean().optional(), source: z.enum(["MANUAL","EMAIL","API"]).optional(), sourceReference:z.string().max(4000).optional(),
 }).strict();
 export const draftSchema = z.object({ id, sourceReference: text, source: z.enum(["MANUAL", "EMAIL", "API"]),
-  subject: text, body: z.string().trim().min(1).max(200000), language: z.string().regex(/^[a-z]{2,3}(?:-[A-Z]{2})?$/), institutionId: id.nullable(),
+  subject: text, body: z.string().min(1).max(200000).refine(value=>value.trim().length>0,'Original complaint text is required.'), language: z.string().regex(/^[a-z]{2,3}(?:-[A-Z]{2})?$/), institutionId: id.nullable(),
   bureauId: id, creatorId: id, state: z.enum(["DRAFT", "UNDER_REVIEW", "ACCEPTED", "REJECTED", "LINKED_TO_EXISTING"]),
   verified: z.boolean(), reviewerId: id.nullable(), linkedCaseId: id.nullable(), receivedAt: at, version, ingestedBy: z.literal("GMAIL_WORKER").optional(), repeatedSubmission:z.boolean().optional(), course:z.string().max(200).optional(), issue:z.string().max(200).optional(), categoryHint:id.optional(),
   categorySuggestions:z.array(z.object({categoryId:id,similarity:z.number().min(-1).max(1),providerVersion:z.string()}).strict()).max(3).optional(),
@@ -72,7 +72,7 @@ export const snapshotSchema = z.object({
   discovery: z.array(z.object({ id, caseNumber: version, institutionId: id, categoryId: id, bureauId: id }).strict()).optional(),
   actions: z.array(actionSchema).optional(),
   conflicts: z.array(z.object({ id, caseIds: z.array(id).min(2), actionIds: z.array(id).min(2), explanation: text, ruleVersion: text, status: z.enum(["DETECTED", "CONFIRMED", "DISMISSED"]), reviewerId: id.nullable(), reason: z.string() }).strict()).optional(),
-  translations: z.array(z.object({ id, draftId: id, language: z.string(), subject: z.string(), body: z.string(), provider: z.string(), version: z.string(), correctedBy: id.nullable(), reason: z.string() }).strict()).optional(),
+  translations: z.array(z.object({ id, draftId: id, language: z.string(), subject: z.string(), body: z.string(), provider: z.string(), version: z.string(), correctedBy: id.nullable(), reason: z.string(),modelId:z.string().optional(),modelRevision:z.string().optional(),targetLanguage:z.string().optional(),detector:z.string().optional(),reviewStatus:z.enum(['NEEDS_REVIEW','REVIEWED','SUPERSEDED']).optional(),machineSubject:z.string().optional(),machineBody:z.string().optional() }).strict()).optional(),
 }).strict();
 export type Snapshot = z.infer<typeof snapshotSchema>;
 export type PlatformCase = z.infer<typeof caseSchema>;
@@ -94,6 +94,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("draft.create"), sourceReference: text, source: draftSchema.shape.source, subject: text, body: draftSchema.shape.body,
     language: draftSchema.shape.language, bureauId: id, institutionId: id.nullable(), course:draftSchema.shape.course, issue:draftSchema.shape.issue, categoryHint:draftSchema.shape.categoryHint }).strict(),
   z.object({ type: z.literal("draft.verify"), draftId: id, expectedVersion: version, institutionId: id, reason: text }).strict(),
+  z.object({type:z.literal('draft.language'),draftId:id,expectedVersion:version,language:draftSchema.shape.language,reason:text}).strict(),
   z.object({ type: z.literal("draft.register"), draftId: id, expectedVersion: version, categoryId: id, officerId: id, priority: z.enum(livePriorities), discoveryAllowed: z.boolean().optional() }).strict(),
   z.object({ type: z.literal("draft.associate"), draftId: id, expectedVersion: version, caseId: id, reason: text }).strict(),
   z.object({ type: z.literal("draft.reject"), draftId: id, expectedVersion: version, reason: text }).strict(),

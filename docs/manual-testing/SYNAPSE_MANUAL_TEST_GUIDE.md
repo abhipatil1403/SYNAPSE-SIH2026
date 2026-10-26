@@ -1,78 +1,181 @@
-# SYNAPSE manual testing — isolated development workspace
+# SYNAPSE manual testing — password authentication and IndicTrans2
 
-Final acceptance: **AWAITING USER MANUAL TESTING**. Automated checks are engineering evidence, not your acceptance. Hosted Live Mode and hosted business writes remain **NO-GO**.
+**Final acceptance: AWAITING USER MANUAL TESTING. Hosted Live Mode and hosted business writes remain disabled.** The current dashboard design and fictional Demo Mode are preserved. This guide supersedes the old email-confirmation signup and Google Cloud Translation instructions.
 
-## What you will be testing
+## 1. Prepare Supabase Auth settings yourself
 
-- `/dashboard` and the original sidebar pages remain the existing fictional **Demo Mode**, with the existing design and browser-local data.
-- `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/pending-approval`, `/officer/dashboard` and `/officer-admin` use **real hosted Supabase Auth** and current application approval. Demo identity selection has no effect here.
-- `/platform/*` can use a **separate actual local PostgreSQL development database**, explicitly labelled `ISOLATED POSTGRES / real Supabase Auth / hosted business writes OFF`. These are persistent database workflows, not hosted complaint writes. The original 69-table deployed database is not reset, seeded with workbench cases or exposed to browser roles.
-- `/live-preview` and the hosted officer registry stay gated. An empty isolated registry is expected initially; no Demo complaints are copied in.
+In the SYNAPSE project's Supabase dashboard, open **Authentication → Providers / Sign In → Email**. Enable email/password authentication and disable **Confirm Email**. The application never changes this hosted setting. The owner reported completing this, and a real provider settings check returned `mailer_autoconfirm=true` and email authentication enabled.
 
-Use only invented development complaint content. No production complaint data has been approved for external processing.
+Keep the allowed recovery redirect pointed at **http://localhost:3000/auth/callback** and the site origin consistent with **http://localhost:3000**. Password recovery still uses a one-time PKCE link; ordinary signup/sign-in does not. Production HTTPS, email/abuse policies and security review remain separate release requirements.
 
-## Start on the existing Windows development machine
+## 2. Private configuration locations
 
-Prerequisites: Node 22, installed project dependencies (`npm ci` when needed), PostgreSQL `initdb.exe`/`pg_ctl.exe` on PATH, PowerShell 7 (`pwsh.exe`), the existing ignored gateway configuration, and the approved operator configuration for setup only. DPAPI vaults require the Windows account that created them. Do not copy private vaults/keys into Git or another account.
+| Ignored local file | Variable names / purpose |
+|---|---|
+| `.env.local` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_APP_MODE=demo`, `SYNAPSE_PHASE1_READ_ENABLED=false` |
+| `.env.gateway.local` | `SYNAPSE_GATEWAY_DATABASE_URL`, `SYNAPSE_GATEWAY_CA_FILE`, `SYNAPSE_AUTH_RATE_SECRET`, `SYNAPSE_SIGNUP_ENABLED=true`, optional `SYNAPSE_TRUST_PROXY`; limited TLS gateway only |
+| `.env.operator.local` | `SUPABASE_SECRET_KEY`, `DATABASE_URL`, optional `SUPABASE_DB_CA_FILE`; owner CLI only, never a web/worker environment |
+| `.env.workbench.local` | Generated `SYNAPSE_WORKBENCH_ENABLED`, `SYNAPSE_WORKBENCH_DATABASE_URL`, `SYNAPSE_WORKBENCH_ID`; separate loopback PostgreSQL |
+| `.env.translation.local` | `HF_TOKEN` for owner-authorized model preparation; generated `SYNAPSE_TRANSLATION_API_KEY`; optional `SYNAPSE_TRANSLATION_THREADS`, `SYNAPSE_TRANSLATION_TIMEOUT_SECONDS` |
+| `.env.integrations.local` | `SYNAPSE_INDIC_TRANSLATION_URL=http://127.0.0.1:8001`, generated `SYNAPSE_TRANSLATION_API_KEY`; optional existing Gemini/Gmail worker settings |
 
-In the project directory:
+No password, token or credential value belongs in this guide, chat, client code or Git. Web startup rejects HF/model-service keys and operator credentials. Google translation is no longer selected and is never a fallback. Gemini semantic matching remains a separate optional provider.
+
+## 3. Start the application
+
+Run from the existing project folder in PowerShell:
 
 ```powershell
-npm run workbench:setup
+node --env-file=.env.local --env-file=.env.operator.local scripts/workbench/setup.mjs --create-isolated-development --references-only
 npm run build
 npm run workbench:start
 ```
 
-`workbench:setup` creates/verifies the dedicated loopback cluster on port 55433 and applies only hash-pinned **isolated candidate** SQL. Subsequent runs preserve existing records and refuse unknown schema drift. It imports the three approved identity/reference records, never hosted complaints, Auth credentials or messages. It reads `.env.local` and `.env.operator.local`; the latter must never be loaded into Next. No deployed migration is applied by this command.
+Setup is non-destructive and hash-pins the isolated database on port **55433**. `--references-only` avoids dependence on retired test credentials and refreshes already imported profiles, marking deleted/revoked identities inactive. Approved users are subsequently synchronized from the trusted scoped gateway when they open the workspace. It never imports hosted complaint bodies or Demo data.
 
-`workbench:start` starts the production web server and separate 30-second worker. Leave that terminal running. Open **http://localhost:3000/login**, sign in, then **http://localhost:3000/platform/dashboard**. Use this host consistently; PKCE cookies and same-origin checks are host-sensitive. Stop with Ctrl+C; data and pending jobs remain in PostgreSQL.
+Open **http://localhost:3000/login**. Keep `localhost` consistently; using `127.0.0.1` as the browser origin will fail same-origin checks against the configured localhost origin. The listener itself remains loopback-only. Ctrl+C stops the web/worker processes; PostgreSQL data and jobs persist.
 
-For source development, use `npm run workbench:dev` instead of `workbench:start`, plus a separate worker terminal: `npm run workbench:worker`. Stop production before starting development. Development request/action/browser log forwarding is disabled to keep single-use callback URLs out of terminal logs.
-
-If PostgreSQL was stopped, rerun `workbench:setup`; it starts the existing cluster without resetting it. Do not run setup against hosted Supabase or replay the application baseline there.
-
-## Configuration locations (names only)
-
-| Private file | Purpose and variable names |
+| URL | Purpose |
 |---|---|
-| `.env.local` | Public project configuration: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; `NEXT_PUBLIC_APP_MODE=demo`, `SYNAPSE_PHASE1_READ_ENABLED=false` |
-| `.env.gateway.local` | Existing restricted TLS gateway: `SYNAPSE_GATEWAY_DATABASE_URL`, `SYNAPSE_GATEWAY_CA_FILE`, `SYNAPSE_AUTH_RATE_SECRET`, `SYNAPSE_APP_ORIGIN`, `SYNAPSE_SIGNUP_ENABLED`, `SYNAPSE_TRUST_PROXY`. Origin must be `http://localhost:3000` for these commands. |
-| `.env.operator.local` | Authorized setup/audit only: `SUPABASE_SECRET_KEY`, `DATABASE_URL`, optional `SUPABASE_DB_CA_FILE`. Never a web/worker environment. |
-| `.env.workbench.local` | Generated restricted local runtime: `SYNAPSE_WORKBENCH_ENABLED`, `SYNAPSE_WORKBENCH_DATABASE_URL`, `SYNAPSE_WORKBENCH_ID`. Do not substitute the hosted URL. |
-| `.env.integrations.local` | Worker only: `SYNAPSE_DEV_EXTERNAL_PROCESSING_APPROVED`, `SYNAPSE_GEMINI_API_KEY`, `SYNAPSE_GEMINI_EMBEDDING_MODEL`, `SYNAPSE_GOOGLE_TRANSLATION_KEY`, optional `SYNAPSE_CLAMAV_COMMAND`; Gmail settings below. Never load this into Next or give these names a `NEXT_PUBLIC_` prefix. |
+| `/login` | Real email/password login for officers and administrators |
+| `/signup` | Email, password, confirm password; no role/Bureau/admin selection |
+| `/pending-approval` | Current pending/rejected/suspended/revoked or restricted authority |
+| `/officer/dashboard` | Current account, session controls, Administration link and development workspace link |
+| `/officer-admin` | **Administration → User Approvals**; current authorized System Administrator only |
+| `/platform/dashboard` | Actual isolated PostgreSQL operational workspace; approved users only |
+| `/dashboard` | Existing labelled fictional Demo Mode; never used as live identity |
 
-Keep flags false unless the corresponding approved isolated test is being performed. `.env.example` documents names, not usable credentials. Google keys and OAuth credentials remain **unconfigured/unverified** at this milestone.
+The original hosted read preview stays gated. The `/platform/*` banner explicitly says isolated PostgreSQL, real Supabase Auth and hosted business writes OFF.
 
-## Accounts and development authority
+## 4. Before deleting existing development Auth users — prepare recovery
 
-Use the exact previously approved addresses from your private `.local/phase2/approved-*.json` plans. No passwords are printed here.
-
-| Account | Current hosted authority | Isolated use |
-|---|---|---|
-| Officer A | Original Approval development Bureau, Case Officer | Own intake/cases; no other Bureau's details/documents |
-| Officer B | Original Academic development Bureau, Case Officer | Separate-Bureau isolation account |
-| Third, verified development administrator | Audited expiring configuration-only System Administrator; no Bureau/case privileges | Reference/policy settings; may explicitly delegate **local-only** review roles |
-| Fourth applicant | Real email verified, approved through administrator, then role deliberately revoked in security tests | Pending Approval; **no protected workbench access**. Do not automatically restore it. |
-
-Original hosted development assignments expire **29 October 2026 at 17:30 India time (12:00 UTC)**. Local review delegations expire within 24 hours and cannot outlive membership. Expired authority must be independently reviewed by an authorized administrator, never silently renewed.
-
-Use your own password if known. To use an already generated approved development password without displaying it, **you** may run one of the following on the vault-owning Windows account, paste into the localhost login form, and let the terminal clear the clipboard after 60 seconds:
+**Do these read-only snapshots before deleting the last administrator.** They have been prepared on this Windows account; rerun before any intentional reset if state changed. Windows CurrentUser DPAPI protects the snapshots; keep the original Windows account and private files. No script below deletes an Auth user or application user.
 
 ```powershell
-node scripts/workbench/copy-approved-password.mjs a
-node scripts/workbench/copy-approved-password.mjs b
-node scripts/workbench/copy-approved-password.mjs admin
+npm run phase9:bootstrap:snapshot
+node --env-file=.env.local --env-file=.env.operator.local scripts/phase9/retire-officers.mjs --snapshot-approved-officers --include-approved-applicant --refresh-template
 ```
 
-Run only the command for the account you intend to use; avoid clipboard history/cloud sync. This helper was code-reviewed but clipboard interaction is awaiting owner testing. Alternatively use the real Forgot Password flow. Email-link completion must use the original browser/session; do not post links, OTPs or tokens to chat.
+The administrator snapshot creates ignored `.local/phase9/admin-retirement.vault` and a private `.local/phase9/bootstrap-plan.json` template. The officer snapshot covers the two original approved Case Officers and, with the explicit flag, the fourth approved development applicant, including its currently revoked role. It creates `.local/phase9/officer-retirement.vault` and `officer-retirement-plan.json`. Inspect the selected UUIDs privately; a custom subset can be chosen in that plan. `--refresh-template` intentionally replaces the script-generated target list, not any database record.
 
-For approval/SLA/disposal tests, sign in as the administrator and open `/platform/settings`. Delegate **BUREAU_HEAD** locally to Officer A in A's existing Bureau, and to Officer B in B's existing Bureau, each with an explicit review reason and short expiry. These are audited, isolated-database delegations. They do **not** elevate either original hosted Case Officer assignment. The administrator cannot self-delegate or read cases simply by being System Administrator. Multi-Bureau hosted identities fail closed until a scoped-role gateway DTO is reviewed.
+If these prerequisite snapshots fail, resolve the stated drift while the old authorized identities still exist. No fallback email match, first-user administrator rule, public bootstrap endpoint or role picker exists.
 
-## Manual test sequence
+## 5. Owner deletion and safe recreation
+
+You may now manually delete **only the intended development Auth users** through Supabase **Authentication → Users**, after checking their exact UUIDs. The agent has not deleted any users. Do not reset the database, remove internal users/cases, clear audit tables or edit managed Auth tables with SQL.
+
+The application-owned FK correction archives the old onboarding record before the owner/provider's Auth deletion cascades. Its decision audit and all internal user IDs/case history survive; only identity links and ephemeral recovery grants disappear. Online server Auth validation and closed public read RPCs deny deleted identities even if old cookies/JWTs remain.
+
+For the administrator, use the explicit snapshot/rebind process below. For reusing the **officer/applicant** email addresses after owner deletion, review `.local/phase9/officer-retirement-plan.json`, then:
+
+```powershell
+npm run phase9:retire:check
+npm run phase9:retire:apply
+```
+
+The check rolls back. Apply refuses any still-existing Auth identity, changed authority, unmapped snapshot, global administrator or new identity mapping. It expires the selected retired officer authority, suspends the old internal profile, records the original email in protected audit, and uses a reserved `.invalid` retention label to free the unique contact field. That label is **not a new Auth identity or login**. Historical IDs/cases remain preserved. Fresh same-email applicants receive new internal IDs only after normal independent approval; they never inherit historical complaint access because of an email match.
+
+If deleting just some test users, remove the others from the retirement plan; it deliberately refuses to retire an Auth identity that still exists. Do not run legacy four-account hosted test runners after replacing their approved identities/passwords; they fail closed rather than recreate privileges.
+
+## 6. Recreate the first administrator securely
+
+1. Use **`/signup`** with the explicitly approved administrator identity. With Confirm Email off, Supabase issues a password session immediately and the server records a pending application. No verification link is needed and no role is created.
+2. The new user must reach `/pending-approval`. Copy its **new Auth user UUID** from Supabase Authentication → Users into ignored `.local/phase9/bootstrap-plan.json` as `authId`. This is not a token.
+3. Review `email`, `environment=DEVELOPMENT_ONLY`, `approvedRole=SYSTEM_ADMIN`, `scope=GLOBAL`, a future expiry within 90 days and the owner authorization reason. The prepared `rebind` identifies the exact retired administrator UUID/internal ID backed by the encrypted snapshot. Never substitute another officer's internal ID. A different initial administrator requires an explicit new owner-approved identity/plan; email is never an authorization bypass.
+4. Run the owner-only check and provisioning commands:
+
+```powershell
+npm run phase9:bootstrap:check
+npm run phase9:bootstrap:apply
+```
+
+Check validates the actual provider UUID/email and pending application, then rolls back. Apply requires no other active mapped global administrator, closed read gates and the exact approved rebind proof. It preserves the retired configuration administrator's internal ID, records an owner audit event, and grants only one expiring GLOBAL SYSTEM_ADMIN role with no Bureau membership, legacy global-case flag or complaint access. Repeating the exact completed plan is idempotent; it does not renew privileges. If an authorized administrator still exists, bootstrap refuses and the normal review workflow must be used.
+
+For a brand-new authorized administrator with no prior internal identity, an owner-controlled plan can omit `rebind`; any existing internal-email collision fails for explicit reconciliation. The CLI requires operator SQL/Auth-read authority and is never exposed to the browser. It does not create a password, delete an identity or modify Supabase managed-schema policies.
+
+## 7. Applicant → pending → administrator approval
+
+1. In a separate browser profile, open `/signup`. Enter an approved development email, a password of at least **12 characters**, and matching confirmation. Press **Sign Up**.
+2. Expect an immediate session and `/pending-approval`, with no Bureau, role or complaint access. Refresh the page and try `/officer/dashboard` and `/platform/dashboard` directly; server protection must retain the pending restriction. Protected APIs return 403. Duplicate signup is rejected and cannot replace an existing password/identity.
+3. Sign in as the independently bootstrapped/current administrator through the **same `/login`** page. Choose **Administration → User Approvals**.
+4. Review applicant email, application signup/received date, status and audit history. Requested Bureau is not collected at public signup. Choose the correct active Bureau, allowed role, explicit assignment expiry and reason; submit **APPROVED**. Allowed portal roles are CASE_OFFICER, BUREAU_HEAD, AUDITOR and REVIEWER. SYSTEM_ADMIN is never offered here; self-approval is denied.
+5. Refresh/sign in as the officer. Current approval, scoped role and membership must resolve before `/officer/dashboard` or `/platform/dashboard` opens. Open the development workspace once so its scoped identity/reference cache is synchronized. Reports, cases and evidence remain authorized by the current server identity.
+
+For two-Bureau checks, use separate approved officers with different memberships. One must not see the other's restricted descriptions, documents or operations. Newly recreated users have no automatically inherited cases. Create fictional development complaints in the isolated workspace and explicitly review discovery/access grants.
+
+## 8. Rejection, revocation and recovery
+
+- **Reject another applicant:** use a separately approved development address, sign it up, then select REJECTED in User Approvals with a reason. Its pending screen must show rejection; login/retry cannot reset that decision or grant data access.
+- **Revoke an approved account:** administrator selects REVOKED or SUSPENDED with a reason. The transaction changes current application authority/memberships/roles with audit. Existing browser sessions must be denied protected data on the next server request, without waiting for JWT refresh. A role-only expiry also restricts access; an approved application with inactive authority displays “Access requires review.”
+- **Logout/expiry:** sign out and try a protected URL/old session again; the application must deny it. Natural JWT expiry is enforced; do not modify tokens to simulate success.
+- **Forgot Password:** use `/forgot-password`, then open the newest actual recovery email in the **same browser/session** that requested it. Its one-time PKCE callback opens `/reset-password`; set and confirm the new password. Old password/session must fail, and recovery must not restore rejected/revoked privileges. Ordinary signup/login never sends a magic-link login request.
+
+Real recovery was executed for the prior approved development accounts. A fresh post-redesign mailbox reset and the new-applicant approval/rejection journey remain owner manual acceptance; no new account was invented or deleted to manufacture a hosted signup pass.
+
+## 9. Start the genuine IndicTrans2 service
+
+Selected official MIT checkpoints, pinned by commit:
+
+- `ai4bharat/indictrans2-indic-en-dist-200M` @ `d66a2122ad6d28184f3dc3797b652bd80ae3f65f`
+- `ai4bharat/indictrans2-en-indic-dist-200M` @ `2cfd0a20057756d756bf3e53528f492afc52f91a`
+
+The owner has approved Hugging Face access and configured `HF_TOKEN` privately. Official Toolkit requires Linux/macOS; this machine uses **Ubuntu WSL, Python 3.12**, a CPU PyTorch runtime and `IndicTransToolkit==1.1.1`. No native-Windows inference claim is made. Allow several GB disk and roughly 8 GB available RAM for models/runtime; Only one direction remains resident at a time to bound development RAM. CPU cold loading and longer translations can be slow. A GPU deployment would need a separately tested compatible runtime.
+
+The WSL virtual environment is already installed at `~/.cache/synapse-it2/venv`. For a new Linux/WSL machine, install the official `uv` tool, then create that environment and install the pinned requirements from the repository root:
+
+```bash
+uv venv --python python3.12 ~/.cache/synapse-it2/venv
+uv pip install --python ~/.cache/synapse-it2/venv/bin/python -r services/translation/requirements.txt
+```
+
+In Windows PowerShell configure the private service/worker shared key without printing it:
+
+```powershell
+npm run phase9:translation:configure
+```
+
+Prepare official files and run the service in a separate terminal (exact path for this workspace):
+
+```powershell
+wsl -d Ubuntu -- bash -lc 'cd "/mnt/f/ALL/ABHI/VIT/HACKATHONS/SIH 2026/SYNAPSE-SIH2026" && ~/.cache/synapse-it2/venv/bin/python -m services.translation.run --prepare'
+wsl -d Ubuntu -- bash -lc 'cd "/mnt/f/ALL/ABHI/VIT/HACKATHONS/SIH 2026/SYNAPSE-SIH2026" && ~/.cache/synapse-it2/venv/bin/python -m services.translation.run'
+```
+
+Preparation downloads only the pinned official code/configs, safetensors and SentencePiece assets, after owner-approved access. Serving uses cached files at `~/.cache/synapse-it2/huggingface` in offline mode and removes HF_TOKEN from its runtime environment. The API binds **127.0.0.1:8001**, requires a backend Bearer credential even for health, rejects excess requests/input and returns clear unsupported-language/loading/timeout errors. It exposes no public CORS/docs or browser key. Keep its terminal running alongside `npm run workbench:start`.
+
+## 10. Test actual Marathi/Hindi intake translation
+
+As an approved officer, open `/platform/intake`. Enter fictional Marathi or Hindi original text and select the source language. Save the draft and verify its institution. The durable worker calls the authenticated local IndicTrans2 API and persists original text, model output, official model/revision, detected/manual source language, target language and **NEEDS_REVIEW** state.
+
+Open `/platform/intelligence` → processing status for actual queued/blocked outcomes. If the language is uncertain/unsupported, select the correct manual source code in Intake and confirm it; this supersedes the old translation and queues a fresh version. Lingua provides real open-source identification but does not cover every Indic language reliably; manual selection remains available for all supported model languages/scripts.
+
+Read the translation next to the original, correct it, record a reason and confirm review. The machine output/provenance remains retained separately from the reviewed text; the original complaint is unchanged. Registration rejects an unreviewed current translation. Human review is mandatory for decisions. Nothing merges or approves a complaint automatically.
+
+Actual engineering inference passed **Marathi → English, Hindi → English and English → Hindi**, plus an actual service → leased SQL queue → provenance persistence → human-correction gate test using fictional data. One longer CPU reverse-translation probe reached the enforced deadline; shorter input passed. The service rejects partial output rather than returning a fabricated result. Requests are limited to 20,000 body characters and 4,000 subject characters. Default inference deadline is 120 seconds, configurable only within the bounded service limit; cold loading can make an initial worker attempt time out and retry. Translation quality still awaits your review.
+
+Reproduce engineering checks, if desired:
+
+```powershell
+npm run phase9:test:translation
+npm run phase9:test:translation:database
+```
+
+The database check creates/removes only a fresh disposable database on **55432**, uses synthetic identities/source text, and does not alter your persistent manual data on 55433 or hosted cases. Its provider response is actual inference, unlike explicitly labelled contract simulations in the standard unit suite.
+
+## 11. Other integrations and release limits
+
+Gmail still requires an explicitly approved dedicated mailbox address and OAuth access. The fourth Auth address is not authorized for ingestion. Do not connect/read it. Gemini remains separately configured for approved development content. No Google translation fallback exists.
+
+Fresh security advisor access succeeded: seven legacy mutable-search-path warnings, the intentional current-session-revocation RPC definer warning, and disabled leaked-password protection remain documented in `docs/phase9/README.md`. The new private functions have fixed search paths, FORCE-RLS source tables and restricted execution. Hosted operational writes, independent HTTPS/security/release review and final owner acceptance remain pending. No global Live Mode switch is enabled by this work.
+
+After any owner deletion/recreation, refresh local reference profiles with the setup command in section 3. Use the preserved approved administrator for local-only Bureau Head delegation if testing SLA/transfer/disposal approval. This does not elevate original hosted officer roles. Never delete/reset deployed tables to clean up a manual test.
+
+
+## 12. Preserved operational workflow regression
 
 Record case numbers and source references privately. Use separate browser profiles for A/B/admin; logging out clears a shared profile across tabs.
 
-1. **Auth and pending restrictions.** Log in with A, refresh the session and log out. An unauthenticated `/platform` API must return 401; the fourth applicant must remain Pending Approval/403. Real fourth-account recovery, logout, revocation and natural JWT expiry have engineering evidence; your acceptance is still pending. The first signup automatic callback failed historically even though provider confirmation succeeded; fresh signup callback reliability remains blocked, not presumed fixed.
+1. Follow the new password/approval tests above.
 2. **Institution registry.** As A, open `/platform/institutions`, create a development institution with an explicitly fictional Permanent ID such as `DEV-OWNER-001`. Duplicate normalized IDs must fail. The administrator can correct its name/state/region with a reason. Never create a false real AICTE institution record in hosted data.
 3. **Register a complaint.** Open `/platform/intake`. Save a unique manual source reference, original text/language, optional course/issue and your authorized Bureau. Select that draft, verify its institution, choose the configured category and yourself as officer, optionally opt into limited discovery, then register. No case exists before verification/registration. Review any pending duplicate/translation results first. A successful command must refresh the database snapshot, not just display a toast.
 4. **Dashboard consistency.** Refresh `/platform/dashboard`, `/platform/cases`, institution profile and `/platform/analytics`. The new case must appear and totals must reconcile with your authorized registry. Reload/restart the app to check persistence. Zero values are legitimate. Category/ageing/region counts derive from actual isolated records. Original `/dashboard` remains Demo and will not reflect this case.
@@ -84,37 +187,3 @@ Record case numbers and source references privately. Use separate browser profil
 10. **SLA/calendar.** Administrator publishes a labelled **development-only** policy with explicit requirements and expiry. A local head sets an actual future deadline under that policy. Administrator enables its reminder schedule in Settings. The worker records reminder/overdue notifications idempotently; repeated ticks must not duplicate them. No statutory deadline is inferred. Schedule hearings/reviews/approvals/Bureau activities; Overview and full Calendar share their selector. Test previous/next month, Today, event-day selection and actual case links.
 11. **Resolution.** Complete/cancel outstanding work, verify accepted evidence, resolve findings/conflicts/dependencies and move to UNDER_REVIEW. Select a current policy and persist a fresh Quality Gate evaluation. A current Bureau Head may dispose only after required checks pass. Changed records invalidate evaluations. Disposed cases reject mutation; reopening is deliberately unavailable until a versioned review-cycle contract is approved.
 12. **Search/reports/notifications.** Search/filter/page the registry; verify reports contain only authorized cases and mark notifications read. Settings, team directory, Intelligence and testing-help routes must load truthful scoped/empty/error states.
-
-## Gemini and translation tests — blocked until keys configured
-
-Create `.env.integrations.local` privately. Set `SYNAPSE_DEV_EXTERNAL_PROCESSING_APPROVED=true` only for the approved fictional development content; provide restricted Gemini and Cloud Translation keys and `SYNAPSE_GEMINI_EMBEDDING_MODEL=gemini-embedding-001`. Enable billing/API access according to the provider project policy. Restart `workbench:start`, or run:
-
-```powershell
-node --env-file=.env.workbench.local --env-file=.env.integrations.local --import tsx scripts/workbench/worker.mjs --once
-```
-
-Intelligence reports persisted queue outcomes; requeue a blocked source job after configuration/institution verification. Actual semantic processing uses an institution-indexed shortlist capped at 49, authorized candidates only, exact fingerprints and actual embeddings. Category/course/issue/date explanations distinguish verified features from absent information. Category suggestions use actual category embeddings. Cosines/development thresholds are **not calibrated confidence**, and no cases merge automatically. Create related and different test complaints and review every recommendation manually.
-
-Non-English drafts enqueue actual Cloud Translation to English with detected language, provider provenance, original text retained and mandatory human correction/review. No confidence is invented. Test Hindi/Marathi plus the Indian languages relevant to your demo. Provider availability/input limits can reject a request; inspect its blocked/failed job instead of substituting fabricated text.
-
-## Gmail intake — no mailbox is currently approved
-
-The fourth Auth address is **not** approved for ingestion. Do not connect/read it. First obtain explicit owner approval for the dedicated team mailbox address and OAuth access.
-
-Only after approval, prepare ignored `.local/workbench/approved-mailbox.json` containing `environment: "DEVELOPMENT_ONLY"`, exact `address`, ISO `approvedAt`, approved Gmail **label ID** in `label`, current approved review-owner UUID in `reviewOwnerId` and its Bureau UUID in `bureauId`. Keep this private. Set worker-only `SYNAPSE_GMAIL_CLIENT_ID`, `SYNAPSE_GMAIL_CLIENT_SECRET`; configure the OAuth application's exact redirect `http://127.0.0.1:8765/oauth/callback` and approved test user. Then:
-
-```powershell
-node --env-file=.env.integrations.local --import tsx scripts/workbench/authorize-gmail.mjs
-```
-
-Open the consent URL in the **private local file named by the helper**, confirm only `gmail.readonly`, and authorize the approved mailbox. Its profile must match before token storage or ingestion. The refresh token is CurrentUser DPAPI encrypted; no mailbox is read by merely implementing the adapter.
-
-Set `SYNAPSE_GMAIL_ENABLED=true` and exact `SYNAPSE_GMAIL_APPROVED_ADDRESS` in the worker file only, then restart the worker. Send fictional test messages to that dedicated label. Check durable message-ID receipts, cursor recovery, repeated-content flags, draft creation without approval and attachment retention. Human verify/register the draft; supported source attachments become persisted evidence, with binaries quarantined. Unsupported attachments stay in retained source payload for operator review. Retry/restart and send an approved burst to verify no lost/duplicate drafts. The 40-source automated SQL test uses synthetic messages and **does not certify Gmail delivery**.
-
-## Errors, cleanup and activation
-
-API errors are sanitized, no-store and shown in the workspace. Refresh after stale-version errors. Intelligence shows owned/admin queue counts and provider evidence, not a guessed configured status. The worker logs aggregate counts/codes, never source mail, keys, response bodies or Auth URLs. Private database logs live in `.local/workbench/postgres.log`; do not share raw logs or generated security receipts without review.
-
-For normal cleanup reject unregistered drafts, withdraw evidence, cancel test tasks and complete authorized disposition; use unique development reference prefixes. Retain audit history. No delete/reset control or automatic cleanup of the persistent manual database is provided. An owner may archive the isolated environment and revoke its local runtime access after reviewing retention; never point disposable test cleanup at port 55433 or hosted Supabase.
-
-Before hosted activation: approve scoped lifecycle/roles and hosted transactional repositories/RLS/storage; obtain independent gateway/security/HTTPS/Secure-cookie and email/abuse review; resolve fresh signup callback reliability; obtain a fresh allowed advisor run; configure/test approved providers/mailbox; approve monitoring/retention/recovery; and record owner manual acceptance. The Phase 2 provider-only direct-RPC defect was remediated by private application gateway/grant changes, **not** by modifying managed Auth tables. Historical managed-session candidate stays unapplied. No checklist or environment flag alone authorizes release.

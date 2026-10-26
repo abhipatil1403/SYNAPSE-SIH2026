@@ -1,0 +1,10 @@
+{
+  "migration": "20261026215821_phase9_password_approval_lifecycle.sql",
+  "sha256": "9cfdfde671659a85765b4f24c64256d059c273e72fdfb36900adc4d147f18656",
+  "localAuthorizationPassed": true,
+  "hostedApplied": true,
+  "managedObjectsChanged": false,
+  "existingFunctionsUnchanged": true,
+  "hostedBusinessWritesEnabled": false,
+  "checkedAt": "2026-10-26T22:10:45.135Z"
+}

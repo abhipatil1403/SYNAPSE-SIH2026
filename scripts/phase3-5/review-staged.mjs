@@ -24,7 +24,7 @@ try {
   try{workbench=await loadVault('.local/workbench/operator.vault');}catch{}
   try{gmail=await loadVault('.local/workbench/gmail-oauth.vault');}catch{}
   const integrationValues=[];
-  for(const path of ['.env.workbench.local','.env.integrations.local']){try{for(const line of (await readFile(path,'utf8')).split(/\r?\n/)){const match=line.match(/^([A-Z_]+)=(.+)$/);if(match&&/KEY|SECRET|TOKEN|DATABASE_URL|APPROVED_ADDRESS/.test(match[1]))integrationValues.push(match[2].trim().replace(/^['"]|['"]$/g,''));}}catch{}}
+  for(const path of ['.env.workbench.local','.env.integrations.local','.env.translation.local']){try{for(const line of (await readFile(path,'utf8')).split(/\r?\n/)){const match=line.match(/^([A-Z_]+)=(.+)$/);if(match&&/KEY|SECRET|TOKEN|DATABASE_URL|APPROVED_ADDRESS/.test(match[1]))integrationValues.push(match[2].trim().replace(/^['"]|['"]$/g,''));}}catch{}}
   const privateLinks = [];
   for (const path of [".local/phase2/applicant-confirm-link.txt", ".local/phase2/applicant-reset-link.txt"]) {
     try { const raw = (await readFile(path, "utf8")).trim(); const link = new URL(raw.replaceAll("&amp;", "&")); privateLinks.push(raw, link.href, ...["token", "token_hash", "code"].map((key) => link.searchParams.get(key)).filter(Boolean)); } catch { /* Optional unopened actual mailbox link. */ }

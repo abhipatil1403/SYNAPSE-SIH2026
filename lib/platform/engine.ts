@@ -82,12 +82,14 @@ export class PlatformEngine {
           reject("expectedVersion" in cmd && draft.version === cmd.expectedVersion, "stale_version", "Draft changed; reload before reviewing.");
           reject(["DRAFT", "UNDER_REVIEW"].includes(draft.state), "already_reviewed", "Draft was already registered or associated.");
           draft.version = increment(draft.version); entityId = draft.id;
-          if (cmd.type === "draft.verify") {
+          if(cmd.type==='draft.language'){
+            draft.language=cmd.language;for(const t of s.translations?.filter(t=>t.draftId===draft.id)??[])t.reviewStatus='SUPERSEDED';
+          }else if (cmd.type === "draft.verify") {
             reject(s.institutions.some((i) => i.id === cmd.institutionId), "invalid_institution", "Select a verified institution.", 400);
             draft.institutionId = cmd.institutionId; draft.verified = true; draft.state = "UNDER_REVIEW"; draft.reviewerId = user.id;
           } else if (cmd.type === "draft.register") {
             reject(draft.verified && draft.institutionId && draft.reviewerId, "unverified_draft", "Human verification must precede registration.");
-            reject(!s.translations?.some(t=>t.draftId===draft.id&&!t.correctedBy), "translation_review_required", "Review the persisted translation against the original before registration.");
+            reject(!s.translations?.some(t=>t.draftId===draft.id&&!t.correctedBy&&t.reviewStatus!=='SUPERSEDED'), "translation_review_required", "Review the persisted translation against the original before registration.");
             reject(s.categories.some((k) => k.id === cmd.categoryId), "invalid_category", "A configured case category is required.", 400);
             reject(!s.matches.some((m) => m.draftId === draft.id && ["PENDING", "DUPLICATE"].includes(m.decision)), "duplicate_review_required", "Review pending candidates; confirmed duplicates require explicit association.");
             const officer = s.staff.find((u) => u.id === cmd.officerId && u.active);

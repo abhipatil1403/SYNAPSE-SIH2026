@@ -1,0 +1,15 @@
+# CPU Linux/WSL runtime. Toolkit upstream does not support native Windows.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.7.1+cpu
+transformers==4.51.3
+IndicTransToolkit==1.1.1
+numpy==2.2.6
+sentencepiece==0.2.0
+accelerate==1.7.0
+huggingface-hub==0.30.2
+fastapi==0.115.12
+uvicorn==0.34.2
+python-dotenv==1.1.0
+lingua-language-detector==2.2.0
+httpx==0.28.1
+pytest==8.3.5

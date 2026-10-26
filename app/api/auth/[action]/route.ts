@@ -12,7 +12,7 @@ import { roleReviewSchema, roleAssignmentsSchema } from "@/lib/auth/administrati
 export const runtime = "nodejs";
 function providerFailure(error: { status?: number } | null, login = false) {
   if (error) throw new Phase1Error(error.status === 429 ? 429 : error.status && error.status >= 500 ? 503 : login ? 401 : 400,
-    "authentication_failed", "The authentication request could not be completed. Check your information or request a fresh link.");
+    "authentication_failed", login?'Email or password is incorrect, or sign-in is unavailable.':'The request could not be completed. Check your information and the password policy, then try again.');
 }
 export async function GET(request: NextRequest, { params }: { params: Promise<{ action: string }> }) {
   let ctx: ReturnType<typeof authContext> | undefined;
@@ -29,8 +29,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return ctx.respond(await gateway("read", resolved.claims, "cases", parseCaseQuery(request.nextUrl.searchParams)));
     }
     if (action === "session") return ctx.respond({ account: resolved.account, destination: accountDestination(resolved.account), liveEnabled: false });
-    const listing = z.object({ requests: z.array(z.object({ auth_user_id: z.uuid(), email: z.email(), display_name: z.string(), status: z.string(), revision: z.string(), requested_at: z.string() })),
-      bureaus: z.array(z.object({ id: z.uuid(), name: z.string() })) }).parse(await gateway("account", resolved.claims, "list"));
+    const listing = z.object({ requests: z.array(z.object({ auth_user_id: z.uuid(), email: z.email(), display_name: z.string(), status: z.string(), revision: z.string(), requested_at: z.string(),history:z.array(z.object({action:z.string(),at:z.string(),actorId:z.string().nullable(),detail:z.record(z.string(),z.unknown())})) })),
+      bureaus: z.array(z.object({ id: z.uuid(), name: z.string() })) }).parse(await gateway("applicants", resolved.claims, "list"));
     return ctx.respond({ ...listing, requests: listing.requests.map((row) => ({ ...row, canDecide: row.auth_user_id !== resolved.claims.sub })) });
   } catch (error) { return phase1Failure(error, ctx?.respond); }
 }
@@ -44,20 +44,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const input = loginSchema.parse(await smallJson(request)); await throttle(request, "login", input.email);
       const { error } = await ctx.client.auth.signInWithPassword(input); providerFailure(error, true);
       const resolved = await ctx.account();
-      if (resolved.account.status === "PENDING_APPROVAL") await gateway("account", resolved.claims, "request", { email: resolved.user.email, name: String(resolved.user.user_metadata?.display_name ?? "Officer").slice(0, 150), confirmed: true });
       return ctx.respond({ account: resolved.account, destination: accountDestination(resolved.account), liveEnabled: false });
     }
     if (action === "signup") {
       const input = signupSchema.parse(await smallJson(request)); await throttle(request, "signup", input.email);
       if (process.env.SYNAPSE_SIGNUP_ENABLED !== "true") throw new Phase1Error(403, "registration_disabled", "Officer registration currently requires an administrator invitation.");
-      const { data, error } = await ctx.client.auth.signUp({ email: input.email, password: input.password,
-        options: { emailRedirectTo: ctx.config.appOrigin + "/auth/callback", data: { display_name: input.name } } }); providerFailure(error);
-      // User metadata supplies a display preference only; no roles/Bureaus are read from it.
-      if (data.session) {
-        const identity = await ctx.verified();
-        await gateway("account", identity.claims, "request", { email: identity.user.email, name: input.name, confirmed: true });
-      }
-      return ctx.respond({ message: "Registration request accepted. Verify your email if prompted. Complaint access requires separate officer approval.", destination: data.session ? "/pending-approval" : null });
+      const {data,error}=await ctx.passwordSignup(input);
+      if(error?.code==='user_already_exists'||error?.code==='email_exists')throw new Phase1Error(409,'registration_unavailable','Unable to create this account. If you already registered, sign in or reset your password.');
+      providerFailure(error);
+      if(!data.session)throw new Phase1Error(409,'immediate_signup_unavailable','An immediate password session was not issued. Contact the administrator to check signup settings, or try signing in if already registered.');
+      const resolved=await ctx.account();
+      return ctx.respond({message:'Account created. Administrator approval is required before complaint access.',account:resolved.account,destination:accountDestination(resolved.account),liveEnabled:false});
     }
     if (action === "forgot-password") {
       const input = emailSchema.parse(await smallJson(request)); await throttle(request, "recovery", input.email);

@@ -27,6 +27,13 @@ jobs:
       - run: npm ci
       - run: npm run baseline:check
       - run: npm test
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # API contracts + real open-source language identification; no model/HF
+      # credentials or fabricated inference results are installed in CI.
+      - run: python -m pip install -r services/translation/requirements-test.txt
+      - run: python -m pytest services/translation/test_service.py -q
       - run: npm run typecheck
       - run: npm run lint
       # Never load operator variables or connect this job to hosted Supabase.

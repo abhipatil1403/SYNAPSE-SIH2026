@@ -165,7 +165,7 @@ try {
   for (const file of (await readdir("supabase/migrations"))
     // Historical authorization suites run against their own migration boundary;
     // the gateway correction and its inverse direct-RPC assertions run afterward.
-    .filter((f) => f.endsWith(".sql") && !f.includes("phase6_") && (phase2 || !f.includes("phase2_")))
+    .filter((f) => f.endsWith(".sql") && !f.includes("phase6_") && !f.includes("phase9_") && (phase2 || !f.includes("phase2_")))
     .sort()) {
     await db.query("BEGIN");
     try {
@@ -267,12 +267,14 @@ try {
       await db.query(await readFile("supabase/candidates/20261026191333_phase6_admin_role_assignments.sql", "utf8"));
       await db.query("COMMIT");
     } catch (error) { await db.query("ROLLBACK"); throw error; }
+    await db.query(await readFile("supabase/candidates/20261026215821_phase9_password_approval_lifecycle.sql", "utf8"));
     const { verifyAuthGateway } = await import("./phase6-7/local-auth.ts");
     results.push(...await verifyAuthGateway(db));
   }
   await mkdir(platform ? "docs/phase3-5" : phase2 ? "docs/phase2" : "docs/phase1", { recursive: true });
   const report = {
     checkedAt: new Date().toISOString(),
+    authLifecycleSha256:auth?createHash("sha256").update(await readFile("supabase/candidates/20261026215821_phase9_password_approval_lifecycle.sql","utf8")).digest("hex"):null,
     postgres: (await db.query("show server_version")).rows[0].server_version,
     environment:
       "disposable loopback database; managed Auth helpers simulated; no real JWT issued",

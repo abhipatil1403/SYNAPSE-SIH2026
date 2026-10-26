@@ -29,5 +29,5 @@ test("client reset confirmation validates locally; provider errors are displayed
   await page.getByLabel("Password", { exact: true }).fill("local-password-one"); await page.getByLabel("Confirm password", { exact: true }).fill("local-password-two");
   await page.getByRole("button", { name: "Update password" }).click(); await expect(page.locator(".auth-card").getByRole("alert")).toHaveText("The passwords do not match.");
   await page.getByLabel("Confirm password", { exact: true }).fill("local-password-one"); await page.getByRole("button", { name: "Update password" }).click();
-  await expect(page.locator(".auth-card").getByRole("alert")).toContainText("Sign in with a verified email account.");
+  await expect(page.locator(".auth-card").getByRole("alert")).toContainText("Sign in with your email and password.");
 });

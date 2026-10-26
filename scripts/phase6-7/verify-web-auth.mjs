@@ -29,7 +29,7 @@ safeMain(async()=>{
       for(let i=0;i<2;i++){
         const page=await contexts[i].newPage(); await page.goto(origin+"/login");
         await page.getByLabel("Email address",{exact:true}).fill(vault.accounts[i].email);await page.getByLabel("Password",{exact:true}).fill(vault.accounts[i].password);
-        await Promise.all([page.waitForURL(origin+"/officer/dashboard",{timeout:45000}),page.getByRole("button",{name:"Sign in",exact:true}).click()]);
+        await Promise.all([page.waitForURL(origin+"/officer/dashboard",{timeout:45000}),page.getByRole("button",{name:"Sign In",exact:true}).click()]);
         const response=await contexts[i].request.get(origin+"/api/auth/cases"), body=await response.json();assert.equal(response.status(),200);
         const own=vault.fixtures.cases.find(c=>c.slot===(i===0?"A":"B")).id,other=vault.fixtures.cases.find(c=>c.slot===(i===0?"B":"A")).id;
         assert.ok(body.items.some(c=>c.id===own));assert.ok(!body.items.some(c=>c.id===other));
@@ -45,8 +45,8 @@ safeMain(async()=>{
       pass("role_recovery_refresh", "Both officers are denied administrator decisions and password changes without recovery; actual HTTP session refresh succeeds.");
       try {
         await db.query("UPDATE synapse.auth_identity_links SET revoked_at=clock_timestamp() WHERE auth_user_id=$1 AND revoked_at IS NULL",[vault.accounts[0].authUserId]);
-        const restricted=await contexts[0].request.get(origin+"/officer/dashboard",{maxRedirects:0});assert.equal(restricted.status(),307);assert.ok(restricted.headers().location.endsWith("/pending-approval"));
-        assert.equal((await contexts[0].request.get(origin+"/api/auth/cases")).status(),403);
+        const restricted=await contexts[0].request.get(origin+"/officer/dashboard",{maxRedirects:0});if(restricted.status()!==307)console.error("WEB_CHECK mapping_revocation_redirect_status="+restricted.status());assert.equal(restricted.status(),307);assert.ok(restricted.headers().location.endsWith("/pending-approval"));
+        const denied=await contexts[0].request.get(origin+"/api/auth/cases");if(denied.status()!==403)console.error("WEB_CHECK mapping_revocation_api_status="+denied.status());assert.equal(denied.status(),403);
       } finally { await db.query("UPDATE synapse.auth_identity_links SET revoked_at=NULL WHERE auth_user_id=$1",[vault.accounts[0].authUserId]); }
       pass("pending_approval_restriction", "Temporarily revoked mapping routes an actual verified session to Pending Approval and denies case APIs; original mapping restored.");
       const first=contexts[0], saved=await first.cookies();assert.equal((await first.request.post(origin+"/api/auth/logout",{headers:{Origin:origin},data:{}})).status(),200);

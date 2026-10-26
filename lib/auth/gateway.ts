@@ -19,14 +19,14 @@ function database() {
   pool.on("error", () => { /* No URL/provider/user material is written to logs. */ });
   return pool;
 }
-export async function gateway(operation: "read" | "account" | "limit" | "memberships" | "roles", claims: unknown, action: string, input: unknown = {}) {
+export async function gateway(operation: "read" | "account" | "limit" | "memberships" | "roles" | "applicants", claims: unknown, action: string, input: unknown = {}) {
   const connection = await database().connect();
   try {
     await connection.query("BEGIN");
     await connection.query("SET LOCAL ROLE synapse_web_gateway");
     const result = operation === "limit"
       ? await connection.query("SELECT synapse_gateway.limit_attempt($1,$2,$3) result", [action, (input as { limit: number }).limit, 900])
-      : await connection.query(operation === "read" ? "SELECT synapse_gateway.read($1,$2,$3) result" : operation === "memberships" ? "SELECT synapse_gateway.memberships($1,$2,$3) result" : operation === "roles" ? "SELECT synapse_gateway.roles($1,$2,$3) result" : "SELECT synapse_gateway.account($1,$2,$3) result", [JSON.stringify(claims), action, JSON.stringify(input)]);
+      : await connection.query(operation === 'applicants'?'SELECT synapse_gateway.applicants($1,$2,$3) result':operation === "read" ? "SELECT synapse_gateway.read($1,$2,$3) result" : operation === "memberships" ? "SELECT synapse_gateway.memberships($1,$2,$3) result" : operation === "roles" ? "SELECT synapse_gateway.roles($1,$2,$3) result" : "SELECT synapse_gateway.account($1,$2,$3) result", [JSON.stringify(claims), action, JSON.stringify(input)]);
     await connection.query("COMMIT"); return result.rows[0].result as unknown;
   } catch (error) {
     await connection.query("ROLLBACK");
@@ -56,15 +56,19 @@ export async function authReadiness() {
       NOT pg_has_role(current_user,'synapse_case_reader','MEMBER') AND NOT pg_has_role(current_user,'synapse_account_manager','MEMBER') no_owner_assumption`)).rows[0];
     const checks = Object.entries(result).map(([id, value]) => ({ id, status: value === true ? "PASS" : "FAIL", source: "Current hosted database catalog" }));
     for (const [file, id] of [["hosted-auth-results.json", "hosted-auth"], ["web-auth-results.json", "web-auth"], ["admin-reset-results.json", "email_delivery_and_recovery"], ["admin-roles-results.json", "admin_role_management"],
-      ["applicant-confirmation-results.json", "applicant_email_confirmation"], ["applicant-approval-results.json", "applicant_independent_approval"],
+      ["applicant-approval-results.json", "applicant_independent_approval"],
       ["applicant-workflow-results.json", "applicant_authorization"], ["applicant-reset-results.json", "applicant_mailbox_recovery"], ["applicant-expiry-results.json", "applicant_jwt_expiry"]]) {
       try {
         const evidence = JSON.parse(await readFile(`docs/phase6-7/${file}`, "utf8"));
         const fresh = Date.now() - Date.parse(evidence.checkedAt) < 3600000 && Date.parse(evidence.checkedAt) <= Date.now();
         checks.push({ id, status: fresh && evidence.checks?.length > 0 && evidence.checks.every((c: { status: string }) => c.status === "PASS") ? "PASS" : "BLOCKED", source: `Recorded executed test evidence · ${evidence.checkedAt}` });
-        if (id === "applicant_email_confirmation") checks.push({ id: "applicant_signup_callback", status: fresh && evidence.automaticCallback === "PASS" ? "PASS" : "BLOCKED", source: "Automatic signup callback must be verified separately from mailbox confirmation and later password login" });
       } catch { checks.push({ id, status: "BLOCKED", source: "No current executed evidence is installed on this server" }); }
     }
+    try{
+      const response=await fetch(process.env.NEXT_PUBLIC_SUPABASE_URL+'/auth/v1/settings',{headers:{apikey:process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY??''},cache:'no-store',signal:AbortSignal.timeout(10000)}),settings=await response.json();
+      checks.push({id:'password_signup_configuration',status:response.ok&&settings.mailer_autoconfirm===true&&settings.external?.email===true?'PASS':'BLOCKED',source:'Current provider settings: immediate email/password signup requires owner-disabled Confirm Email; no setting changed by the application'});
+    }catch{checks.push({id:'password_signup_configuration',status:'BLOCKED',source:'Current provider configuration could not be checked'});}
+    checks.push({id:'fresh_password_signup_acceptance',status:'AWAITING USER MANUAL TESTING',source:'Primary signup no longer depends on a verification callback. No unused approved identity was provided for an automated new hosted signup.'});
     checks.push({ id: "production_email_policy", status: "BLOCKED", source: "Production SMTP, redirect, abuse-protection and delivery policy review still required" },
       { id: "https_deployment", status: "BLOCKED", source: "Trusted HTTPS Secure-cookie test still required" },
       { id: "independent_release_approval", status: "BLOCKED", source: "No independent activation approval recorded" });

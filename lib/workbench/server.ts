@@ -12,11 +12,9 @@ export function workbenchServer(request: NextRequest) {
   const ctx = authContext(request); pool ??= makeWorkbenchPool(config.connectionString);
   const resolve = async () => {
     const identity = await ctx.account(); if (identity.account.status !== "APPROVED" || !identity.account.internalUserId) throw new PlatformError(403,"approval_required","Current hosted approval is required for the isolated database too.");
-    // The existing gateway account DTO flattens roles. Until it returns reviewed
-    // scoped role tuples, do not infer which of several Bureaus owns a role.
-    if(identity.account.memberships.length>1)throw new PlatformError(503,'scoped_identity_contract_required','Multi-Bureau identity requires a reviewed scoped gateway contract before isolated access.');
+    if(!identity.profile)throw new PlatformError(403,'current_scope_required','Current scoped identity must be resolved before isolated access.');
     const principal = principalSchema.parse({ authId: identity.claims.sub, sessionId: identity.claims.session_id, userId: identity.account.internalUserId });
-    return { identity, principal, store: new WorkbenchStore(pool!,config.environmentId,{principal,account:identity.account}) };
+    return { identity, principal, store: new WorkbenchStore(pool!,config.environmentId,{principal,account:identity.account,profile:identity.profile}) };
   };
   const repository: PlatformRepository = {
     snapshot: async () => { const r = await resolve(); return new PlatformEngine(r.store).snapshot(r.principal); },

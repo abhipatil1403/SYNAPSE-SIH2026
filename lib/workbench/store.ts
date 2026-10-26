@@ -1,5 +1,5 @@
 import { Pool, type PoolClient } from "pg";
-import type { State, Principal } from "../platform/contracts";
+import type { State, Principal, Staff } from "../platform/contracts";
 import type { TransactionStore } from "../platform/engine";
 import type { OfficerAccount } from "../auth/policy";
 import { snapshotSchema, staffSchema, scopeSchema } from "../platform/contracts";
@@ -9,7 +9,7 @@ import {inspectAttachment} from './attachments';
 export const collections = ["staff","bureaus","institutions","categories","cases","drafts","tasks","evidence","matches","relationships","findings","policies","comments","activity","sla","events","notifications","accessRequests","transfers","actions","conflicts","translations"] as const;
 type Collection = typeof collections[number];
 export class WorkbenchStore implements TransactionStore {
-  constructor(public pool: Pool, public environmentId: string, private identity?: { principal: Principal; account: OfficerAccount }) {}
+  constructor(public pool: Pool, public environmentId: string, private identity?: { principal: Principal; account: OfficerAccount; profile?:Staff }) {}
   async connection() {
     const c = await this.pool.connect();
     try {
@@ -26,6 +26,12 @@ export class WorkbenchStore implements TransactionStore {
     } catch (error) { await c.query("ROLLBACK"); throw error; } finally { c.release(); }
   }
   async load(c: PoolClient): Promise<State> {
+    if(this.identity){const {principal,account,profile}=this.identity;
+      if(account.status!=='APPROVED'||!profile||profile.id!==principal.userId||profile.authId!==principal.authId||!profile.active)throw Error('CURRENT_TRUSTED_PROFILE_REQUIRED');
+      // Exact scoped tuples come from the private gateway after online Auth.
+      // Recreated/approved users never inherit a Demo or email-selected identity.
+      await c.query('INSERT INTO workbench.staff(id,environment_id,body) VALUES($1,$2,$3) ON CONFLICT(id) DO UPDATE SET body=excluded.body WHERE workbench.staff.environment_id=excluded.environment_id',[profile.id,this.environmentId,profile]);
+    }
     const meta = (await c.query("SELECT revision::text,next_case_number::text FROM workbench.meta WHERE environment_id=$1", [this.environmentId])).rows[0];
     const entries: Record<string, unknown> = {};
     for (const table of collections) entries[table] = (await c.query(`SELECT body FROM workbench."${table}" WHERE environment_id=$1 ORDER BY id`, [this.environmentId])).rows.map((r) => r.body);
@@ -90,8 +96,11 @@ export class WorkbenchStore implements TransactionStore {
     await c.query("UPDATE workbench.meta SET revision=$2,next_case_number=$3 WHERE environment_id=$1", [this.environmentId,state.revision,state.nextCaseNumber]);
     // Durable jobs are created atomically with the source drafts. Provider calls
     // occur outside this transaction, never while holding business-record locks.
-    for (const d of state.drafts) if (!before.drafts.some((x) => x.id === d.id) || before.drafts.find((x) => x.id === d.id)?.institutionId !== d.institutionId) {
-      for (const kind of d.language === "en" ? ["MATCH"] : ["MATCH","TRANSLATE"])
+    for (const d of state.drafts) if (!before.drafts.some((x) => x.id === d.id) || before.drafts.find((x) => x.id === d.id)?.institutionId !== d.institutionId || before.drafts.find(x=>x.id===d.id)?.language!==d.language) {
+      const previous=before.drafts.find(x=>x.id===d.id),kinds:string[]=[];
+      if(!previous||previous.institutionId!==d.institutionId)kinds.push('MATCH');
+      if(d.language!=='en'&&(!previous||previous.language!==d.language))kinds.push('TRANSLATE');
+      for (const kind of kinds)
         await c.query("INSERT INTO workbench.jobs(environment_id,kind,target_id,actor_id,bureau_id,dedupe_key) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(dedupe_key) DO NOTHING", [this.environmentId,kind,d.id,d.creatorId,d.bureauId,`${kind}:${d.id}:${d.version}`]);
     }
   }

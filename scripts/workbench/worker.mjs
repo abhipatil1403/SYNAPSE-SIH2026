@@ -3,7 +3,8 @@ import {createHash} from 'node:crypto';
 import {workbenchConfig} from '../../lib/workbench/config.ts';
 import {WorkbenchStore,makeWorkbenchPool} from '../../lib/workbench/store.ts';
 import {processOneJob,processDevelopmentSla,pollApprovedGmail,scanPendingEvidence} from '../../lib/workbench/worker.ts';
-import {GeminiEmbeddings,GoogleCloudTranslation,GmailReadOnly} from '../../lib/automation/google.ts';
+import {GeminiEmbeddings,GmailReadOnly} from '../../lib/automation/google.ts';
+import {IndicTrans2} from '../../lib/automation/indictrans.ts';
 import {loadVault} from '../phase2/vault.mjs';
 import {safeMain} from '../phase2/operator.mjs';
 safeMain(async()=>{
@@ -11,7 +12,7 @@ safeMain(async()=>{
  const config=workbenchConfig();if(!config)throw Error('ISOLATED_WORKBENCH_REQUIRED');
  const pool=makeWorkbenchPool(config.connectionString),store=new WorkbenchStore(pool,config.environmentId),settings={developmentProcessingApproved:process.env.SYNAPSE_DEV_EXTERNAL_PROCESSING_APPROVED==='true',
   gemini:process.env.SYNAPSE_GEMINI_API_KEY?new GeminiEmbeddings(process.env.SYNAPSE_GEMINI_API_KEY,process.env.SYNAPSE_GEMINI_EMBEDDING_MODEL||'gemini-embedding-001'):undefined,
-  translation:process.env.SYNAPSE_GOOGLE_TRANSLATION_KEY?new GoogleCloudTranslation(process.env.SYNAPSE_GOOGLE_TRANSLATION_KEY):undefined};
+  translation:process.env.SYNAPSE_INDIC_TRANSLATION_URL&&process.env.SYNAPSE_TRANSLATION_API_KEY?new IndicTrans2(process.env.SYNAPSE_INDIC_TRANSLATION_URL,process.env.SYNAPSE_TRANSLATION_API_KEY):undefined};
  let gmail,mailConfig;
  if(process.env.SYNAPSE_GMAIL_ENABLED==='true'){
   const approval=JSON.parse(await readFile('.local/workbench/approved-mailbox.json','utf8')),credentials=await loadVault('.local/workbench/gmail-oauth.vault');

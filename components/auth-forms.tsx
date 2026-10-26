@@ -4,8 +4,8 @@ import { useState } from "react";
 import { ShieldCheck, Network, ArrowRight } from "lucide-react";
 type AuthKind = "login" | "signup" | "forgot-password" | "reset-password";
 const labels: Record<AuthKind, [string, string, string]> = {
-  login: ["Welcome back", "Sign in with your verified officer account.", "Sign in"],
-  signup: ["Officer registration", "Email verification and administrator approval protect every Bureau.", "Request account"],
+  login: ["Welcome back", "Sign in with your email and password.", "Sign In"],
+  signup: ["Officer registration", "Create your account. An administrator must approve your Bureau and role before you can access complaints.", "Sign Up"],
   "forgot-password": ["Reset your password", "We’ll ask Supabase to send a secure link to your registered inbox.", "Request reset link"],
   "reset-password": ["Choose a new password", "Use at least 12 characters. The recovery session expires after 15 minutes.", "Update password"],
 };
@@ -28,12 +28,11 @@ export function AuthForm({ kind, callbackError = false, callbackNotice }: { kind
       } catch { setError(true); setMessage("Unable to reach the secure service. Try again."); }
       finally { setBusy(false); }
     }}>
-      {kind === "signup" && <label>Full name<input name="name" autoComplete="name" required minLength={2} maxLength={150} /></label>}
       {kind !== "reset-password" && <label>Email address<input name="email" type="email" autoComplete="email" required maxLength={254} /></label>}
       {kind !== "forgot-password" && <label>Password<input name="password" type="password" autoComplete={kind === "login" ? "current-password" : "new-password"} required minLength={kind === "login" ? 1 : 12} maxLength={128} /></label>}
       {["signup", "reset-password"].includes(kind) && <label>Confirm password<input name="confirm" type="password" autoComplete="new-password" required minLength={12} maxLength={128} /></label>}
       {message && <p className={error ? "auth-feedback error" : "auth-feedback"} role={error ? "alert" : "status"}>{message}</p>}
       <button className="btn primary" disabled={busy}>{busy ? "Contacting secure service…" : submit}<ArrowRight size={17} /></button>
-    </form><nav className="auth-links" aria-label="Account assistance">{kind === "login" ? <><Link href="/forgot-password">Forgot password?</Link><Link href="/signup">Request officer account</Link></> : <Link href="/login">Back to sign in</Link>}</nav>
+    </form><nav className="auth-links" aria-label="Account assistance">{kind === "login" ? <><Link href="/forgot-password">Forgot Password</Link><Link href="/signup">Create Account</Link></> : <Link href="/login">Back to sign in</Link>}</nav>
     <p className="auth-note">An email account does not grant complaint access. Bureau roles require independent approval.</p></section><Link className="auth-demo" href="/dashboard">Open labelled Demo Mode</Link></main>;
 }

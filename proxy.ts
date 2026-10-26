@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authContext } from "@/lib/auth/server";
 import { Phase1Error } from "@/lib/live/service";
+import {workbenchConfig} from '@/lib/workbench/config';
 export async function proxy(request: NextRequest) {
   let ctx: ReturnType<typeof authContext> | undefined;
   try {
+    if(request.nextUrl.pathname.startsWith('/platform')&&!workbenchConfig())return NextResponse.next();
     ctx = authContext(request);
     const resolved = await ctx.account(), path = request.nextUrl.pathname;
     if (resolved.account.status !== "APPROVED" && path !== "/pending-approval")
@@ -19,4 +21,4 @@ export async function proxy(request: NextRequest) {
     return ctx.apply(NextResponse.json({ error: { message: "Secure officer access is temporarily unavailable. Please retry." } }, { status: 503 }));
   }
 }
-export const config = { matcher: ["/officer/:path*", "/pending-approval", "/officer-admin"] };
+export const config = { matcher: ["/officer/:path*", "/pending-approval", "/officer-admin", "/platform/:path*"] };

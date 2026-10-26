@@ -1,4 +1,5 @@
 import pg from 'pg';
+import {IndicTrans2} from '../../lib/automation/indictrans';
 import assert from 'node:assert/strict';
 import {randomBytes,randomUUID,createHash} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
@@ -9,7 +10,7 @@ import type {Command} from '../../lib/platform/contracts';
 import {processDevelopmentSla,processOneJob} from '../../lib/workbench/worker';
 import {platformDashboard} from '../../lib/platform/selectors';
 import {inspectAttachment} from '../../lib/workbench/attachments';
-import {GeminiEmbeddings,GoogleCloudTranslation} from '../../lib/automation/google';
+import {GeminiEmbeddings} from '../../lib/automation/google';
 async function run(){
 const root=new URL(process.env.SYNAPSE_TEST_DATABASE_URL??'postgresql://postgres@127.0.0.1:55432/postgres');
 if(!['localhost','127.0.0.1'].includes(root.hostname))throw Error('Disposable workbench tests require a loopback test cluster.');
@@ -90,7 +91,7 @@ try{
  const multilingual=await send({type:'draft.create',sourceReference:'simulated-provider-pipeline',source:'MANUAL',subject:'मूळ विषय',body:'मूळ तक्रार',language:'mr',bureauId:id(11),institutionId:null});
  await send({type:'draft.verify',draftId:multilingual.entityId,expectedVersion:'1',institutionId:institution.entityId,reason:'Synthetic source institution verification'});
  const gemini=new GeminiEmbeddings('SIMULATED-CONTRACT-ONLY','gemini-embedding-001',async(_input,init)=>Response.json({embeddings:JSON.parse(String(init?.body)).requests.map(()=>({values:Array(768).fill(1)}))}));
- const translation=new GoogleCloudTranslation('SIMULATED-CONTRACT-ONLY',async()=>Response.json({data:{translations:[{translatedText:'Simulated subject',detectedSourceLanguage:'mr'},{translatedText:'Simulated body',detectedSourceLanguage:'mr'}]}}));
+ const translation=new IndicTrans2('http://127.0.0.1:8001','SIMULATED-CONTRACT-ONLY-32-CHARACTERS',async()=>Response.json({subject:'Simulated subject',body:'Simulated body',sourceLanguage:'mr',targetLanguage:'en',provider:'AI4Bharat IndicTrans2',version:'SIMULATED',modelId:'ai4bharat/indictrans2-indic-en-dist-200M',modelRevision:'d66a2122ad6d28184f3dc3797b652bd80ae3f65f',detector:'manual',inferenceExecuted:true,reviewStatus:'NEEDS_REVIEW'}));
  for(let n=0;n<12;n++)if(!await processOneJob(store,{developmentProcessingApproved:true,gemini,translation}))break;
  const translatedState=await engine.snapshot(principal()),source=translatedState.drafts.find(d=>d.id===multilingual.entityId)!;
  assert.equal(source.body,'मूळ तक्रार');assert.ok(source.categorySuggestions?.length);const translated=translatedState.translations!.find(t=>t.draftId===source.id)!;assert.ok(translated);assert.equal(translated.correctedBy,null);
@@ -98,6 +99,17 @@ try{
  await send({type:'translation.correct',draftId:source.id,translationId:translated.id,expectedVersion:source.version,subject:'Human-reviewed simulated subject',body:'Human-reviewed simulated body',reason:'Synthetic human correction contract'});
  assert.equal((await engine.snapshot(principal())).drafts.find(d=>d.id===source.id)!.body,'मूळ तक्रार');
  console.log('PASS SIMULATED provider responses through real SQL queue/category/translation persistence; original preserved and human-review gate enforced. No real provider claim.');
+ if(process.argv.includes('--real-translation')){
+  assert.ok(process.env.SYNAPSE_INDIC_TRANSLATION_URL&&process.env.SYNAPSE_TRANSLATION_API_KEY,'Configured actual local service required.');
+  const realProvider=new IndicTrans2(process.env.SYNAPSE_INDIC_TRANSLATION_URL!,process.env.SYNAPSE_TRANSLATION_API_KEY!),original='हमारे महाविद्यालय में विद्यार्थियों को आवश्यक शैक्षणिक सुविधाएं नहीं मिल रही हैं। कृपया जांच करें।';
+  const actual=await send({type:'draft.create',sourceReference:'actual-indictrans-database-proof',source:'MANUAL',subject:'शैक्षणिक सुविधाओं की शिकायत',body:original,language:'hi',bureauId:id(11),institutionId:null});await send({type:'draft.verify',draftId:actual.entityId,expectedVersion:'1',institutionId:institution.entityId,reason:'Synthetic human verified actual-model input'});
+  for(let n=0;n<12;n++)if(!await processOneJob(store,{developmentProcessingApproved:false,translation:realProvider}))break;
+  const persisted=await engine.snapshot(principal()),source=persisted.drafts.find(d=>d.id===actual.entityId)!,output=persisted.translations?.find(t=>t.draftId===actual.entityId)!;assert.ok(output);assert.equal(source.body,original);assert.equal(output.provider,'AI4Bharat IndicTrans2');assert.equal(output.reviewStatus,'NEEDS_REVIEW');assert.ok(output.modelRevision);assert.notEqual(output.machineBody,original);
+  await assert.rejects(send({type:'draft.register',draftId:source.id,expectedVersion:source.version,categoryId:id(14),officerId:id(1),priority:'NORMAL'}));
+  await send({type:'translation.correct',draftId:source.id,translationId:output.id,expectedVersion:source.version,subject:output.subject,body:output.body,reason:'Engineering contract review of actual model response; owner quality acceptance pending'});
+  const after=await engine.snapshot(principal());assert.equal(after.translations!.find(t=>t.id===output.id)!.reviewStatus,'REVIEWED');assert.equal(after.translations!.find(t=>t.id===output.id)!.machineBody,output.machineBody);assert.equal(after.drafts.find(d=>d.id===source.id)!.body,original);
+  console.log('PASS ACTUAL IndicTrans2 service → real PostgreSQL leased queue/translation provenance persistence → human-review gate/correction, with original and model text retained. Synthetic development source only; owner quality acceptance pending.');
+ }
  const beforeRollback=(await db.query('SELECT revision FROM workbench.meta')).rows[0].revision;
  await assert.rejects(store.locked(async c=>{await c.query('UPDATE workbench.meta SET revision=revision+999');throw Error('SYNTHETIC_ROLLBACK');}));assert.equal((await db.query('SELECT revision FROM workbench.meta')).rows[0].revision,beforeRollback);
  console.log('PASS failed transaction rolls back persisted revision; no partial commit.');

@@ -34,7 +34,7 @@ safeMain(async()=>{
   for(let i=0;i<4;i++)contexts.push(await browser.newContext());
   const accounts=[applicant,...officers.accounts,administrator],pages=[];
   stage='real_logins';for(let i=0;i<accounts.length;i++){const page=await contexts[i].newPage();pages.push(page);if(resume&&i===0){await contexts[0].addCookies(applicant.cookies.map(cookie=>({...cookie,domain:'127.0.0.1'})));await page.goto(origin+'/officer/dashboard');await page.waitForURL(origin+'/pending-approval');continue;}await page.goto(origin+'/login');await page.getByLabel('Email address',{exact:true}).fill(accounts[i].email);await page.getByLabel('Password',{exact:true}).fill(accounts[i].password);
-   await Promise.all([page.waitForURL(origin+'/officer/dashboard',{timeout:45000}),page.getByRole('button',{name:'Sign in',exact:true}).click()]);}
+   await Promise.all([page.waitForURL(origin+'/officer/dashboard',{timeout:45000}),page.getByRole('button',{name:'Sign In',exact:true}).click()]);}
   const account=(await (await contexts[0].request.get(origin+'/api/auth/session')).json()).account;assert.equal(account.status,resume?'PENDING_APPROVAL':'APPROVED');assert.deepEqual(account.roles,resume?[]:['CASE_OFFICER']);assert.deepEqual(account.memberships,[plan.bureauId]);
   if(!resume)pass('applicant_real_login_and_dashboard','Actual approved applicant password login reaches the protected officer dashboard with exactly one Case Officer role and the approved development Bureau.');
   stage='bounded_read_isolation';await withDevelopmentReadLease(db,officers.accounts.map(a=>a.authUserId),async()=>{

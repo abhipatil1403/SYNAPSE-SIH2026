@@ -24,3 +24,6 @@ docs/phase3-5/*evidence.json
 docs/phase6-7/*results.json
 docs/phase6-7/*evidence.json
 supabase/.temp/
+__pycache__/
+.pytest_cache/
+.venv/

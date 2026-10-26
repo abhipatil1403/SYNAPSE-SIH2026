@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { providerJson, IntegrationError, type Fetcher, type SemanticProvider, type TranslationProvider } from "./providers";
+import { providerJson, IntegrationError, type Fetcher, type SemanticProvider } from "./providers";
 /** Approved development provider. No model/score result is synthesized. */
 export class GeminiEmbeddings implements SemanticProvider {
   readonly version: string;
@@ -15,17 +15,6 @@ export class GeminiEmbeddings implements SemanticProvider {
         body: JSON.stringify({ requests: texts.map((text) => ({ model: "models/" + this.model, content: { parts: [{ text }] }, taskType: "SEMANTIC_SIMILARITY", outputDimensionality: 768 })) }),
       }, this.fetcher));
     return data.embeddings.map((e) => { const norm = Math.hypot(...e.values); if (!norm) throw new IntegrationError("ZERO_EMBEDDING", false); return e.values.map((v) => v / norm); });
-  }
-}
-export class GoogleCloudTranslation implements TranslationProvider {
-  constructor(private key: string, private fetcher: Fetcher = fetch) { if (!key) throw new IntegrationError("GOOGLE_TRANSLATION_CONFIGURATION_REQUIRED", false); }
-  async translate(subject: string, body: string) {
-    if (!body.trim() || body.length + subject.length > 20000) throw new IntegrationError("TRANSLATION_INPUT_LIMIT", false);
-    const data = z.object({ data: z.object({ translations: z.array(z.object({ translatedText: z.string(), detectedSourceLanguage: z.string(), model: z.string().optional() })).length(2) }) }).parse(await providerJson(
-      "https://translation.googleapis.com/language/translate/v2", { method: "POST", headers: { "Content-Type": "application/json", "X-Goog-Api-Key": this.key },
-        body: JSON.stringify({ q: [subject || body.slice(0,100), body], target: "en", format: "text", model: "nmt" }) }, this.fetcher));
-    return { language: data.data.translations[1].detectedSourceLanguage, score: null, subject: data.data.translations[0].translatedText,
-      body: data.data.translations[1].translatedText, provider: "Google Cloud Translation", version: "Basic v2 / NMT; underlying model version not reported" };
   }
 }
 type GmailPart = { mimeType?: string; filename?: string; body?: { data?: string; attachmentId?: string; size?: number }; parts?: GmailPart[]; headers?: { name: string; value: string }[] };

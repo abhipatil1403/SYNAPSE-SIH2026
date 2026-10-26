@@ -1,9 +1,16 @@
+import {IndicTrans2} from '../lib/automation/indictrans';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {GeminiEmbeddings,GoogleCloudTranslation,GmailReadOnly} from '../lib/automation/google';
+import {GeminiEmbeddings,GmailReadOnly} from '../lib/automation/google';
 import {inspectAttachment,scanWithClamAv} from '../lib/workbench/attachments';
 import {workbenchConfig} from '../lib/workbench/config';
 import {activation} from '../lib/platform/repository';
+import {draftSchema} from '../lib/platform/contracts';
+
+test('original complaint text retains whitespace/scripts; whitespace-only intake is rejected',()=>{
+ const original='  मूळ तक्रार\nसंपूर्ण मजकूर  ';
+ assert.equal(draftSchema.shape.body.parse(original),original);assert.equal(draftSchema.shape.body.safeParse(' \n ').success,false);
+});
 test('isolated database configuration cannot redirect the write adapter to hosted or arbitrary databases',()=>{
  const env={SYNAPSE_WORKBENCH_ENABLED:'true',SYNAPSE_WORKBENCH_DATABASE_URL:'postgresql://synapse_workbench_login:contract-only@127.0.0.1:55433/synapse_workbench_123456abcdef',SYNAPSE_WORKBENCH_ID:'30000000-0000-4000-8000-000000000001'};
  assert.ok(workbenchConfig(env));
@@ -16,10 +23,11 @@ test('SIMULATED Gemini HTTP contract sends bounded real API shape and rejects ma
  await assert.rejects(new GeminiEmbeddings('contract-key','gemini-embedding-001',async()=>Response.json({embeddings:[{values:[1]}]})).embed(['Fixture']));
  await assert.rejects(new GeminiEmbeddings('contract-key','gemini-embedding-001',async()=>Response.json({embeddings:[{values:Array(768).fill(0)}]})).embed(['Fixture']));
 });
-test('SIMULATED Google Translation preserves returned provenance and does not invent confidence',async()=>{
- const provider=new GoogleCloudTranslation('contract-key',async(input,init)=>{assert.equal(String(input),'https://translation.googleapis.com/language/translate/v2');const body=JSON.parse(String(init?.body));assert.equal(body.format,'text');assert.equal(body.target,'en');return Response.json({data:{translations:[{translatedText:'Contract subject',detectedSourceLanguage:'mr'},{translatedText:'Contract body',detectedSourceLanguage:'mr'}]}});});
- const result=await provider.translate('मूळ विषय','मूळ तक्रार');assert.equal(result.language,'mr');assert.equal(result.score,null);assert.equal(result.provider,'Google Cloud Translation');
+test('SIMULATED IndicTrans2 validates authenticated local model provenance and no cloud fallback',async()=>{
+ const provider=new IndicTrans2('http://127.0.0.1:8001','contract-only-key-with-at-least-32-characters',async(input,init)=>{assert.equal(String(input),'http://127.0.0.1:8001/v1/translate');assert.match(new Headers(init?.headers).get('Authorization')! ,/^Bearer /);return Response.json({subject:'Simulated subject',body:'Simulated body',sourceLanguage:'mr',targetLanguage:'en',provider:'AI4Bharat IndicTrans2',version:'SIMULATED',modelId:'ai4bharat/indictrans2-indic-en-dist-200M',modelRevision:'d66a2122ad6d28184f3dc3797b652bd80ae3f65f',detector:'manual',inferenceExecuted:true,reviewStatus:'NEEDS_REVIEW'});});
+ const result=await provider.translate('मूळ विषय','मूळ तक्रार','mr');assert.equal(result.score,null);assert.equal(result.provider,'AI4Bharat IndicTrans2');assert.equal(result.required,true);assert.throws(()=>new IndicTrans2('http://untrusted.invalid','contract-only-key-with-at-least-32-characters'));
 });
+
 test('SIMULATED Gmail requires explicit activation and matching approved mailbox before any message read',async()=>{
  const config={enabled:true,approvedAddress:'approved@example.invalid',clientId:'contract-id',clientSecret:'contract-secret',refreshToken:'contract-refresh',label:'INBOX'};let calls=0;
  assert.throws(()=>new GmailReadOnly({...config,enabled:false}));

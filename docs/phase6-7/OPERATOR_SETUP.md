@@ -1,3 +1,5 @@
+> **Phase 9 current flow:** Password signup, owner-controlled administrator recreation and IndicTrans2 supersede the historical signup/translation setup below. Follow [the current manual guide](../manual-testing/SYNAPSE_MANUAL_TEST_GUIDE.md) and [Phase 9 evidence](../phase9/README.md).
+
 # Officer Auth and integration setup
 
 > **Current manual-testing entry point:** [SYNAPSE manual guide](../manual-testing/SYNAPSE_MANUAL_TEST_GUIDE.md). It starts an isolated actual PostgreSQL workspace with real hosted Auth while preserving Demo and hosted gates. The fourth applicant has now completed real independent approval, revocation, recovery and expiry tests and remains role-revoked. The bounded lease helper validates that exact optional fourth mapping/audit in addition to the prior three; unknown identity/authority drift still fails closed. Older paragraphs describing the need for a new pending officer are historical. Fresh automatic signup callback reliability is still unverified.

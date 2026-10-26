@@ -12,7 +12,7 @@ safeMain(async()=>{
  try{
   browser=await chromium.launch({channel:'msedge',headless:true,env});const context=await browser.newContext(),page=await context.newPage();
   await page.goto(origin+'/login');await page.getByLabel('Email address',{exact:true}).fill(admin.email);await page.getByLabel('Password',{exact:true}).fill(admin.password);
-  await Promise.all([page.waitForURL(origin+(pending?'/pending-approval':'/officer/dashboard'),{timeout:45000}),page.getByRole('button',{name:'Sign in',exact:true}).click()]);
+  await Promise.all([page.waitForURL(origin+(pending?'/pending-approval':'/officer/dashboard'),{timeout:45000}),page.getByRole('button',{name:'Sign In',exact:true}).click()]);
   const response=await context.request.get(origin+'/api/auth/session');assert.equal(response.status(),200);const body=await response.json();assert.equal(body.account.status,pending?'PENDING_APPROVAL':'APPROVED');
   if(pending){
    assert.deepEqual(body.account.roles,[]);assert.equal((await context.request.get(origin+'/api/auth/cases')).status(),403);
@@ -23,7 +23,7 @@ safeMain(async()=>{
    checks.push({id:'verified_pending_no_privilege',status:'PASS',detail:'Actual verified third-account login creates Pending Approval and denies cases/admin/self-assignment. No role granted during signup.'});
   }else{
    assert.deepEqual(body.account.roles,['SYSTEM_ADMIN']);assert.deepEqual(body.account.memberships,[]);
-   assert.equal((await context.request.get(origin+'/api/auth/approvals')).status(),200);await page.goto(origin+'/officer-admin');await page.getByRole('heading',{name:'Officer account approvals',exact:true}).waitFor();
+   assert.equal((await context.request.get(origin+'/api/auth/approvals')).status(),200);await page.goto(origin+'/officer-admin');await page.getByRole('heading',{name:'User Approvals',exact:true}).waitFor();
    checks.push({id:'verified_admin_configuration',status:'PASS',detail:'Actual administrator login has the expiring SYSTEM_ADMIN configuration role, no Bureau membership and no automatic case role; administrator page/API opens.'});
    const listed=await context.request.get(origin+'/api/auth/memberships');assert.equal(listed.status(),200);
    const members=(await listed.json()).memberships;

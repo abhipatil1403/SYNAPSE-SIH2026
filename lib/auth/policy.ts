@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { Phase1Error } from "../live/service";
 export const loginSchema = z.object({ email: z.email().max(254), password: z.string().min(1).max(1024) }).strict();
-export const signupSchema = loginSchema.extend({ name: z.string().trim().min(2).max(150), password: z.string().min(12).max(128) }).strict();
+export const signupSchema = loginSchema.extend({ name: z.string().trim().min(2).max(150).optional(), password: z.string().min(12).max(128) }).strict();
 export const resetSchema = z.object({ password: z.string().min(12).max(128) }).strict();
 export const emailSchema = z.object({ email: z.email().max(254) }).strict();
 export const accountSchema = z.object({ status: z.enum(["APPROVED", "PENDING_APPROVAL"]),
   internalUserId: z.uuid().optional(), displayName: z.string().optional(), roles: z.array(z.string()), memberships: z.array(z.uuid()),
+  application: z.object({status:z.enum(['PENDING','APPROVED','REJECTED','SUSPENDED','REVOKED']),requestedAt:z.string(),decidedAt:z.string().nullish()}).optional(),
 }).strict();
 export type OfficerAccount = z.infer<typeof accountSchema>;
 export function validatedClaims(token: string, verifiedUser: { id: string }, projectUrl: string, now = Date.now()) {

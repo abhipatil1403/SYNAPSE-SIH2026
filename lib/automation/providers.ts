@@ -42,8 +42,8 @@ export class OllamaEmbeddings implements SemanticProvider {
     return result.embeddings;
   }
 }
-export type Translation = { language: string; score: number | null; subject: string; body: string; provider: string; version: string };
-export interface TranslationProvider { translate(subject: string, body: string): Promise<Translation> }
+export type Translation = { language: string; score: number | null; subject: string; body: string; provider: string; version: string;required?:boolean;modelId?:string;modelRevision?:string;targetLanguage?:string;detector?:string };
+export interface TranslationProvider { translate(subject: string, body: string,sourceLanguage?:string,targetLanguage?:string): Promise<Translation> }
 export class AzureTranslation implements TranslationProvider {
   constructor(private key: string, private region: string, private fetcher: Fetcher = fetch) {
     if (!key || !region) throw new IntegrationError("TRANSLATION_CONFIGURATION_REQUIRED", false);

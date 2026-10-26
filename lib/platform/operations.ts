@@ -32,7 +32,8 @@ export function supplementalOperation(s: State, u: Staff, cmd: Command, now: str
     ensure(d.version === cmd.expectedVersion, "Draft changed; reload.");
     ensure(['DRAFT','UNDER_REVIEW'].includes(d.state),'Only an unregistered source draft can receive translation corrections.');
     const t = s.translations?.find((t) => t.id === cmd.translationId && t.draftId === d.id); ensure(t, "Persisted translation unavailable.", 404);
-    Object.assign(t, { subject: cmd.subject, body: cmd.body, correctedBy: u.id, reason: cmd.reason }); d.version = String(BigInt(d.version) + 1n); return { entityId: d.id };
+    ensure(t.reviewStatus!=='SUPERSEDED','Select the current source-language translation.');
+    Object.assign(t, { subject: cmd.subject, body: cmd.body, correctedBy: u.id, reason: cmd.reason,reviewStatus:'REVIEWED' }); d.version = String(BigInt(d.version) + 1n); return { entityId: d.id };
   }
   if (cmd.type === "transfer.decide") {
     const t=s.transfers.find(t=>t.id===cmd.transferId&&t.caseId===cmd.caseId&&t.status==='REQUESTED'),c=s.cases.find(c=>c.id===cmd.caseId);

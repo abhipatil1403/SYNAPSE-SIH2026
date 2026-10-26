@@ -1,14 +1,14 @@
 import { randomUUID, createHash } from "node:crypto";
 import { WorkbenchStore } from "./store";
-import { GeminiEmbeddings, GoogleCloudTranslation, GmailReadOnly } from "../automation/google";
-import { IntegrationError } from "../automation/providers";
+import { GeminiEmbeddings, GmailReadOnly } from "../automation/google";
+import { IntegrationError,type TranslationProvider } from "../automation/providers";
 import { normalizeText, cosine, lexicalSupport } from "../automation/normalization";
 import { canRead, role } from "../platform/authorization";
 import { snapshotSchema, type State } from "../platform/contracts";
 import type { PoolClient } from "pg";
 import {scanWithClamAv} from './attachments';
 const hash=(s:string|Buffer)=>createHash('sha256').update(s).digest('hex');
-type WorkerSettings={developmentProcessingApproved:boolean;gemini?:GeminiEmbeddings;translation?:GoogleCloudTranslation};
+type WorkerSettings={developmentProcessingApproved:boolean;gemini?:GeminiEmbeddings;translation?:TranslationProvider};
 function advance(s:State){s.revision=String(BigInt(s.revision)+1n);s.generatedAt=new Date().toISOString();}
 /** Claims one durable job; network calls never run inside the locked transaction. */
 export async function processOneJob(store:WorkbenchStore,settings:WorkerSettings){
@@ -31,11 +31,12 @@ export async function processOneJob(store:WorkbenchStore,settings:WorkerSettings
     snapshotSchema.shape.drafts.parse(s.drafts);advance(s);await store.save(c,before,s);result={draftId:id,humanVerificationRequired:true,originalMimeRetained:true,attachmentCount:job.payload.attachments?.length??0};
    });
   }else if(job.kind==='TRANSLATE'){
-   if(!settings.developmentProcessingApproved||!settings.translation)throw new IntegrationError('APPROVED_GOOGLE_TRANSLATION_CONFIGURATION_REQUIRED',false);
-   const source=await store.locked(async c=>{await lease(c);const s=await store.intakeState(c,{draftId:job.target_id}),d=s.drafts.find(d=>d.id===job.target_id);if(!d)throw new IntegrationError('DRAFT_UNAVAILABLE',false);return {draft:structuredClone(d),fingerprint:hash(d.subject+'\n'+d.body)};});
-   const translated=await settings.translation.translate(source.draft.subject,source.draft.body);
-   await store.locked(async c=>{await lease(c);const before=await store.intakeState(c,{draftId:source.draft.id}),s=structuredClone(before),d=s.drafts.find(d=>d.id===source.draft.id);if(!d||hash(d.subject+'\n'+d.body)!==source.fingerprint)throw new IntegrationError('SOURCE_CHANGED');
-    if(!s.translations?.some(t=>t.draftId===d.id&&t.provider===translated.provider)){s.translations??=[];s.translations.push({id:randomUUID(),draftId:d.id,language:translated.language,subject:translated.subject,body:translated.body,provider:translated.provider,version:translated.version,correctedBy:null,reason:'Actual provider response; human comparison with original required'});advance(s);await store.save(c,before,s);}
+   if(!settings.translation)throw new IntegrationError('INDICTRANS_CONFIGURATION_REQUIRED',false);
+   const source=await store.locked(async c=>{await lease(c);const s=await store.intakeState(c,{draftId:job.target_id}),d=s.drafts.find(d=>d.id===job.target_id);if(!d)throw new IntegrationError('DRAFT_UNAVAILABLE',false);return {draft:structuredClone(d),fingerprint:hash(d.language+'\n'+d.subject+'\n'+d.body)};});
+   const translated=await settings.translation.translate(source.draft.subject,source.draft.body,source.draft.language);
+   await store.locked(async c=>{await lease(c);const before=await store.intakeState(c,{draftId:source.draft.id}),s=structuredClone(before),d=s.drafts.find(d=>d.id===source.draft.id);if(!d||hash(d.language+'\n'+d.subject+'\n'+d.body)!==source.fingerprint)throw new IntegrationError('SOURCE_CHANGED');
+    if(translated.required===false){d.language='en';d.version=String(BigInt(d.version)+1n);advance(s);await store.save(c,before,s);return;}
+    if(!s.translations?.some(t=>t.draftId===d.id&&t.provider===translated.provider&&t.reviewStatus!=='SUPERSEDED')){s.translations??=[];s.translations.push({id:randomUUID(),draftId:d.id,language:translated.language,subject:translated.subject,body:translated.body,provider:translated.provider,version:translated.version,machineSubject:translated.subject,machineBody:translated.body,correctedBy:null,reason:'Actual model response; human comparison with original required',modelId:translated.modelId,modelRevision:translated.modelRevision,targetLanguage:translated.targetLanguage,detector:translated.detector,reviewStatus:'NEEDS_REVIEW'});d.version=String(BigInt(d.version)+1n);advance(s);await store.save(c,before,s);}
    });result={provider:translated.provider,version:translated.version,language:translated.language,confidence:translated.score,humanReviewRequired:true};
   }else if(job.kind==='MATCH'){
    const source=await store.locked(async c=>{

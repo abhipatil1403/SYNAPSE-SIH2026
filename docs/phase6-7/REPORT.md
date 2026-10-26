@@ -1,3 +1,5 @@
+> **Phase 9 current flow:** Password signup, owner-controlled administrator recreation and IndicTrans2 supersede the historical signup/translation setup below. Follow [the current manual guide](../manual-testing/SYNAPSE_MANUAL_TEST_GUIDE.md) and [Phase 9 evidence](../phase9/README.md).
+
 # SYNAPSE Phase 6–7 implementation and verification
 
 > **27 October continuation:** the separately approved fourth applicant completed actual administrator approval, bounded case-read/isolation tests, applicant-only revocation/logout, natural JWT expiry and real mailbox password recovery. Its role remains revoked. First automatic signup callback reliability remains blocked. See [applicant evidence](APPLICANT_ONBOARDING.md). The actual local PostgreSQL operational workspace and approved Google/Gmail adapters supersede older implementation-gap paragraphs below; exact hosted/isolated/provider limits are in [feature readiness](../manual-testing/FEATURE_READINESS.md). Hosted Live Mode remains disabled. Historical results below are retained at their original scope/date.
