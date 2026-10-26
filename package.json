@@ -16,6 +16,12 @@
     "test:database:platform": "node --import tsx scripts/test-database.mjs --platform",
     "test:database:auth": "node --import tsx scripts/test-database.mjs --auth",
     "test:database:sla": "node --import tsx scripts/test-database.mjs --sla",
+    "test:database:workbench": "node --import tsx scripts/workbench/test-database.ts",
+    "workbench:setup": "node --env-file=.env.local --env-file=.env.operator.local scripts/workbench/setup.mjs --create-isolated-development",
+    "workbench:start": "node --import tsx scripts/workbench/start.mjs",
+    "workbench:dev": "node --import tsx scripts/workbench/dev.mjs --isolated",
+    "workbench:worker": "node --env-file=.env.workbench.local --import tsx scripts/workbench/worker.mjs",
+    "test:browser:isolated": "node scripts/workbench/test-browser.mjs",
     "phase2:audit": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase2/hosted-audit.mjs",
     "phase2:provision:check": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase2/provision.mjs",
     "phase2:test:auth": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase2/verify-auth.mjs"

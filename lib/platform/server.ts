@@ -6,12 +6,16 @@ import { PlatformError } from "./contracts";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Phase1Database, Json } from "../live/contracts";
 import { ZodError } from "zod";
+import { workbenchConfig } from "../workbench/config";
+import { workbenchServer } from "../workbench/server";
+import { Phase1Error } from "../live/service";
 type PlatformDatabase = { public: Omit<Phase1Database["public"], "Functions"> & { Functions: Phase1Database["public"]["Functions"] & {
   synapse_platform_snapshot: { Args: Record<PropertyKey, never>; Returns: Json };
   synapse_platform_command: { Args: { p_envelope: Json }; Returns: Json };
 } } };
 
 export function platformServer(request: NextRequest) {
+  if (workbenchConfig()) return workbenchServer(request);
   if (!activation.reads) throw new PlatformError(503, "platform_locked", activation.reason);
   const context = phase1Context(request);
   // Narrow declared pending RPC surface only; no service client or direct private tables.
@@ -34,7 +38,7 @@ export function platformServer(request: NextRequest) {
   return { repository, queries: new PlatformQueries(repository), respond: context.respond };
 }
 export function platformFailure(error: unknown) {
-  const e = error instanceof PlatformError ? error : error instanceof ZodError
+  const e = error instanceof PlatformError ? error : error instanceof Phase1Error ? new PlatformError(error.status,error.code,error.message) : error instanceof ZodError
     ? new PlatformError(400, "invalid_command", "Review required fields and supported record values.")
     : new PlatformError(503, "service_unavailable", "The protected platform service is unavailable.");
   return NextResponse.json({ error: { code: e.code, message: e.message } }, { status: e.status,

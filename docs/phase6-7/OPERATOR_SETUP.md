@@ -1,5 +1,7 @@
 # Officer Auth and integration setup
 
+> **Current manual-testing entry point:** [SYNAPSE manual guide](../manual-testing/SYNAPSE_MANUAL_TEST_GUIDE.md). It starts an isolated actual PostgreSQL workspace with real hosted Auth while preserving Demo and hosted gates. The fourth applicant has now completed real independent approval, revocation, recovery and expiry tests and remains role-revoked. The bounded lease helper validates that exact optional fourth mapping/audit in addition to the prior three; unknown identity/authority drift still fails closed. Older paragraphs describing the need for a new pending officer are historical. Fresh automatic signup callback reliability is still unverified.
+
 ## Local runtime
 
 The authorized application gateway provisioning procedure has created **`.env.gateway.local`**, ignored by Git and restricted by Windows ACL. It contains only the limited server login, CA path, rate-limit HMAC secret and signup policy. It contains no Supabase operator/service key. Do not copy these values into chat, `NEXT_PUBLIC_*` variables or tracked files.

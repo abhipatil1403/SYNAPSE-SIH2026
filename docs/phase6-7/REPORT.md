@@ -1,5 +1,7 @@
 # SYNAPSE Phase 6–7 implementation and verification
 
+> **27 October continuation:** the separately approved fourth applicant completed actual administrator approval, bounded case-read/isolation tests, applicant-only revocation/logout, natural JWT expiry and real mailbox password recovery. Its role remains revoked. First automatic signup callback reliability remains blocked. See [applicant evidence](APPLICANT_ONBOARDING.md). The actual local PostgreSQL operational workspace and approved Google/Gmail adapters supersede older implementation-gap paragraphs below; exact hosted/isolated/provider limits are in [feature readiness](../manual-testing/FEATURE_READINESS.md). Hosted Live Mode remains disabled. Historical results below are retained at their original scope/date.
+
 ## Executive summary
 
 **The application is not fully operational in Live Mode.** Real officer authentication and a restricted read gateway now work against hosted Supabase. The confirmed provider-only logout/direct-RPC hole has been closed through application-owned changes; no protected managed Auth object was modified. All read activation flags, global Live Mode and live business writes remain off outside explicitly bounded security-test leases.

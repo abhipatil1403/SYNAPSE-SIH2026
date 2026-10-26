@@ -12,7 +12,7 @@ export interface AuthenticatedRpcTransport {
   rpc(name: "synapse_platform_snapshot" | "synapse_platform_command", args: Record<string, unknown>): Promise<{ data: unknown; code?: string }>;
 }
 export const activation = Object.freeze({ reads: false, businessWrites: false,
-  reason: "Phase 2 NO-GO: provider-only logout replay remains unresolved; platform RPC authorization and managed-session migration are not approved." });
+  reason: "Hosted platform workflows await independent release and transactional/RLS approval. The protected registry gateway is separate; hosted business writes remain disabled." });
 export class SupabasePlatformRepository implements PlatformRepository {
   constructor(private transport: AuthenticatedRpcTransport) {}
   private async authenticate() {

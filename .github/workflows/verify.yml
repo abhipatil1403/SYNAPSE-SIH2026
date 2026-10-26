@@ -33,4 +33,5 @@ jobs:
       - run: npm run test:database:platform
       - run: npm run test:database:auth
       - run: npm run test:database:sla
+      - run: npm run test:database:workbench
       - run: npm run build

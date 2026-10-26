@@ -17,12 +17,13 @@ export const staffSchema = z.object({ id, authId: id, name: text, active: z.bool
 export const caseSchema = z.object({ id, caseNumber: version, institutionId: id, categoryId: id,
   bureauId: id, officerId: id.nullable(), subject: text, summary: z.string().max(20000),
   status: z.enum(liveStatuses), priority: z.enum(livePriorities),
-  receivedAt: at, updatedAt: at, disposedAt: at.nullable(), version,
+  receivedAt: at, updatedAt: at, disposedAt: at.nullable(), version, discoverable: z.boolean().optional(), source: z.enum(["MANUAL","EMAIL","API"]).optional(), sourceReference:z.string().max(4000).optional(),
 }).strict();
 export const draftSchema = z.object({ id, sourceReference: text, source: z.enum(["MANUAL", "EMAIL", "API"]),
-  subject: text, body: text, language: z.enum(["en", "hi", "mr"]), institutionId: id.nullable(),
+  subject: text, body: z.string().trim().min(1).max(200000), language: z.string().regex(/^[a-z]{2,3}(?:-[A-Z]{2})?$/), institutionId: id.nullable(),
   bureauId: id, creatorId: id, state: z.enum(["DRAFT", "UNDER_REVIEW", "ACCEPTED", "REJECTED", "LINKED_TO_EXISTING"]),
-  verified: z.boolean(), reviewerId: id.nullable(), linkedCaseId: id.nullable(), receivedAt: at, version,
+  verified: z.boolean(), reviewerId: id.nullable(), linkedCaseId: id.nullable(), receivedAt: at, version, ingestedBy: z.literal("GMAIL_WORKER").optional(), repeatedSubmission:z.boolean().optional(), course:z.string().max(200).optional(), issue:z.string().max(200).optional(), categoryHint:id.optional(),
+  categorySuggestions:z.array(z.object({categoryId:id,similarity:z.number().min(-1).max(1),providerVersion:z.string()}).strict()).max(3).optional(),
 }).strict();
 export const taskSchema = z.object({ id, caseId: id, bureauId: id, assigneeId: id.nullable(), title: text,
   type: z.enum(["INVESTIGATION", "REVIEW", "FOLLOW_UP", "APPROVAL"]),
@@ -46,13 +47,15 @@ export const findingSchema = z.object({ id, kind: z.enum(["CONFLICT", "CONTRADIC
 export const policySchema = z.object({ id, label: text, approved: z.boolean(), from: at, until: at.nullable(),
   requirements: z.array(z.enum(["EVIDENCE", "TASKS", "DEPENDENCIES", "FINDINGS", "APPROVAL"])).min(1),
 }).strict();
+export const institutionSchema = z.object({ id, name: text, permanentId: z.string().max(40).optional(), region: z.string().max(100).optional(), state: z.string().max(100).optional(), version: version.optional() }).strict();
+export const actionSchema = z.object({ id, caseId: id, type: z.enum(["INSPECTION", "APPROVAL", "REJECTION", "REFERRAL"]), topic: text, from: at, until: at, reason: text, actorId: id }).strict();
 export const snapshotSchema = z.object({
   revision: version, generatedAt: at,
   cases: z.array(caseSchema), drafts: z.array(draftSchema), tasks: z.array(taskSchema), evidence: z.array(evidenceSchema),
   matches: z.array(z.object({ id, draftId: id, caseId: id, explanation: text, algorithmVersion: text,
-    decision: z.enum(["PENDING", "DISTINCT", "RELATED", "DUPLICATE"]), reviewerId: id.nullable(), reason: z.string() }).strict()),
+    decision: z.enum(["PENDING", "DISTINCT", "RELATED", "DUPLICATE"]), reviewerId: id.nullable(), reason: z.string(), similarity: z.number().min(-1).max(1).optional(), recommendation: z.enum(["DISTINCT","RELATED","DUPLICATE"]).optional(), sourceFingerprint: z.string().optional() }).strict()),
   relationships: z.array(relationshipSchema), findings: z.array(findingSchema), policies: z.array(policySchema),
-  bureaus: z.array(z.object({ id, name: text }).strict()), institutions: z.array(z.object({ id, name: text }).strict()),
+  bureaus: z.array(z.object({ id, name: text }).strict()), institutions: z.array(institutionSchema),
   categories: z.array(z.object({ id, name: text }).strict()),
   comments: z.array(z.object({ id, caseId: id, authorId: id, body: text, at }).strict()),
   activity: z.array(z.object({ id, caseId: id.nullable(), actorId: id, type: text, reason: text, at }).strict()),
@@ -64,16 +67,34 @@ export const snapshotSchema = z.object({
     until: at, status: z.enum(["PENDING", "APPROVED", "REJECTED"]), reviewerId: id.nullable() }).strict()),
   transfers: z.array(z.object({ id, caseId: id, fromBureauId: id, toBureauId: id, officerId: id,
     reason: text, status: z.enum(["REQUESTED", "COMPLETED", "REJECTED"]), requestedBy: id, expectedVersion: version }).strict()),
+  directory: z.array(z.object({ id, name: text, bureauIds: z.array(id), roles: z.array(z.string()) }).strict()).optional(),
+  me: z.object({ id, name: text, bureauIds: z.array(id), roles: z.array(z.string()) }).strict().optional(),
+  discovery: z.array(z.object({ id, caseNumber: version, institutionId: id, categoryId: id, bureauId: id }).strict()).optional(),
+  actions: z.array(actionSchema).optional(),
+  conflicts: z.array(z.object({ id, caseIds: z.array(id).min(2), actionIds: z.array(id).min(2), explanation: text, ruleVersion: text, status: z.enum(["DETECTED", "CONFIRMED", "DISMISSED"]), reviewerId: id.nullable(), reason: z.string() }).strict()).optional(),
+  translations: z.array(z.object({ id, draftId: id, language: z.string(), subject: z.string(), body: z.string(), provider: z.string(), version: z.string(), correctedBy: id.nullable(), reason: z.string() }).strict()).optional(),
 }).strict();
 export type Snapshot = z.infer<typeof snapshotSchema>;
 export type PlatformCase = z.infer<typeof caseSchema>;
 export type Staff = z.infer<typeof staffSchema>;
 export type PlatformEvidence = z.infer<typeof evidenceSchema>;
 export const commandSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("draft.create"), sourceReference: text, source: draftSchema.shape.source, subject: text, body: text,
-    language: draftSchema.shape.language, bureauId: id, institutionId: id.nullable() }).strict(),
+  z.object({ type: z.literal("institution.create"), permanentId: z.string().min(3).max(40), name: text, region: z.string().max(100), state: z.string().max(100) }).strict(),
+  z.object({ type: z.literal("institution.update"), institutionId: id, expectedVersion: version, name: text, region: z.string().max(100), state: z.string().max(100), reason: text }).strict(),
+  z.object({ type: z.literal("category.create"), name: text }).strict(),
+  z.object({ type: z.literal("policy.publish"), label: text, until: at, requirements: policySchema.shape.requirements }).strict(),
+  z.object({ type: z.literal("sla.set"), caseId: id, expectedVersion: version, dueAt: at, policyId: id, reason: text }).strict(),
+  z.object({ type: z.literal("event.schedule"), caseId: id, expectedVersion: version, title: text, at, kind: z.enum(["HEARING", "REVIEW", "APPROVAL", "BUREAU_ACTIVITY"]), reason: text }).strict(),
+  z.object({ type: z.literal("action.record"), caseId: id, expectedVersion: version, actionType: actionSchema.shape.type, topic: text, from: at, until: at, reason: text }).strict(),
+  z.object({ type: z.literal("conflict.review"), caseId: id, expectedVersion: version, conflictId: id, decision: z.enum(["CONFIRMED", "DISMISSED"]), reason: text }).strict(),
+  z.object({ type: z.literal("access.revoke"), caseId: id, expectedVersion: version, userId: id, scope: scopeSchema, reason: text }).strict(),
+  z.object({ type: z.literal("translation.correct"), draftId: id, translationId: id, expectedVersion: version, subject: text, body: text, reason: text }).strict(),
+  z.object({ type: z.literal("evidence.attach"), caseId: id, expectedVersion: version, evidence: evidenceSchema }).strict(),
+  z.object({ type: z.literal("evidence.review"), caseId: id, expectedVersion: version, evidenceId: id, status: z.enum(["VERIFIED","DISPUTED","WITHDRAWN"]), reason: text }).strict(),
+  z.object({ type: z.literal("draft.create"), sourceReference: text, source: draftSchema.shape.source, subject: text, body: draftSchema.shape.body,
+    language: draftSchema.shape.language, bureauId: id, institutionId: id.nullable(), course:draftSchema.shape.course, issue:draftSchema.shape.issue, categoryHint:draftSchema.shape.categoryHint }).strict(),
   z.object({ type: z.literal("draft.verify"), draftId: id, expectedVersion: version, institutionId: id, reason: text }).strict(),
-  z.object({ type: z.literal("draft.register"), draftId: id, expectedVersion: version, categoryId: id, officerId: id, priority: z.enum(livePriorities) }).strict(),
+  z.object({ type: z.literal("draft.register"), draftId: id, expectedVersion: version, categoryId: id, officerId: id, priority: z.enum(livePriorities), discoveryAllowed: z.boolean().optional() }).strict(),
   z.object({ type: z.literal("draft.associate"), draftId: id, expectedVersion: version, caseId: id, reason: text }).strict(),
   z.object({ type: z.literal("draft.reject"), draftId: id, expectedVersion: version, reason: text }).strict(),
   z.object({ type: z.literal("match.review"), draftId: id, expectedVersion: version, matchId: id, decision: z.enum(["DISTINCT", "RELATED", "DUPLICATE"]), reason: text }).strict(),

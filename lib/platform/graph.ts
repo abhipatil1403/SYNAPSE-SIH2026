@@ -1,5 +1,5 @@
 import type { Snapshot } from "./contracts";
-export type CaseGraphNode = { id: string; kind: "CASE" | "INSTITUTION" | "BUREAU" | "OFFICER"; label: string; href?: string };
+export type CaseGraphNode = { id: string; kind: "CASE" | "INSTITUTION" | "BUREAU" | "OFFICER" | "ACTION"; label: string; href?: string };
 export type CaseGraphEdge = { id: string; source: string; target: string; type: string; derived: boolean };
 /** Input must be the server's authorized projection, never an unfiltered graph. */
 export function caseGraph(snapshot: Snapshot, query = "", includeProposed = false) {
@@ -20,5 +20,6 @@ export function caseGraph(snapshot: Snapshot, query = "", includeProposed = fals
   }
   for (const r of snapshot.relationships) if (ids.has(r.sourceId) && ids.has(r.targetId) && (r.status === "CONFIRMED" || includeProposed && r.status === "PROPOSED"))
     edges.push({ id: r.id, source: "case:" + r.sourceId, target: "case:" + r.targetId, type: r.type + (r.status === "PROPOSED" ? " · PROPOSED" : ""), derived: false });
+  for(const action of snapshot.actions??[])if(ids.has(action.caseId)){const key='action:'+action.id;nodes.set(key,{id:key,kind:'ACTION',label:action.type+' · '+action.topic,href:'/platform/cases/'+action.caseId});edges.push({id:key+':case',source:'case:'+action.caseId,target:key,type:'RECORDED_ACTION',derived:false});}
   return { nodes: [...nodes.values()], edges };
 }

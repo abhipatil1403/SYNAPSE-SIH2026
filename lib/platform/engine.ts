@@ -3,6 +3,7 @@ import { envelopeSchema, principalSchema, PlatformError, type State, type Princi
 import { resolveStaff, requireCase, role, current, canRead } from "./authorization";
 import { authorizedSnapshot } from "./selectors";
 import { allowedTransitions } from "./lifecycle";
+import { supplementalOperation, intakeAuthority, discoveryAllowed } from "./operations";
 
 export interface TransactionStore {
   // Implementations must serialize competing mutations and atomically persist state,
@@ -32,7 +33,7 @@ export function closureFingerprint(s: State, c: PlatformCase, policyId: string) 
     tasks: s.tasks.filter((t) => t.caseId === c.id), evidence: s.evidence.filter((e) => e.caseId === c.id),
     relationships: s.relationships.filter((r) => r.sourceId === c.id || r.targetId === c.id),
     dependencies: s.relationships.filter((r) => r.sourceId === c.id && r.type === "DEPENDS_ON").map((r) => s.cases.find((x) => x.id === r.targetId)),
-    findings: s.findings.filter((f) => f.caseIds.includes(c.id)),
+    findings: s.findings.filter((f) => f.caseIds.includes(c.id)), actions:s.actions?.filter(a=>a.caseId===c.id), conflicts:s.conflicts?.filter(f=>f.caseIds.includes(c.id)),
   })).digest("hex");
 }
 function cycle(s: State, source: string, target: string) {
@@ -66,16 +67,18 @@ export class PlatformEngine {
       }
       let entityId = this.uuid(), changed: PlatformCase | undefined;
       const head = (c: PlatformCase) => reject(role(user, "BUREAU_HEAD", c.bureauId, now), "forbidden", "Current Bureau approval authority is required.", 403);
-      if (cmd.type.startsWith("draft.") || cmd.type === "match.review") {
+      const extra = supplementalOperation(s, user, cmd, now, this.uuid);
+      if (extra) { entityId = extra.entityId; changed = extra.changed; }
+      else if (cmd.type.startsWith("draft.") || cmd.type === "match.review") {
         if (cmd.type === "draft.create") {
-          reject(role(user, "BUREAU_HEAD", cmd.bureauId, now), "intake_authority_unresolved", "Intake requires current scoped Bureau review authority; no live Intake role is invented.", 403);
+          reject(intakeAuthority(user, cmd.bureauId, now), "intake_authority_required", "Current scoped officer or Bureau review authority is required.", 403);
           reject(!s.drafts.some((d) => d.sourceReference === cmd.sourceReference && d.source === cmd.source), "duplicate_source", "This source message is already captured.");
           s.drafts.push({ id: entityId, sourceReference: cmd.sourceReference, source: cmd.source, subject: cmd.subject, body: cmd.body,
             language: cmd.language, bureauId: cmd.bureauId, institutionId: cmd.institutionId, creatorId: user.id, state: "DRAFT", verified: false,
-            reviewerId: null, linkedCaseId: null, receivedAt: now, version: "1" });
+            reviewerId: null, linkedCaseId: null, receivedAt: now, version: "1",course:cmd.course,issue:cmd.issue,categoryHint:cmd.categoryHint });
         } else {
           const draft = s.drafts.find((d) => d.id === (cmd as Extract<Command, { type: "draft.verify" }>).draftId);
-          reject(draft && role(user, "BUREAU_HEAD", draft.bureauId, now), "not_found", "The authorized draft is unavailable.", 404);
+          reject(draft && intakeAuthority(user, draft.bureauId, now) && (draft.creatorId === user.id || role(user, "BUREAU_HEAD", draft.bureauId, now)), "not_found", "The authorized draft is unavailable.", 404);
           reject("expectedVersion" in cmd && draft.version === cmd.expectedVersion, "stale_version", "Draft changed; reload before reviewing.");
           reject(["DRAFT", "UNDER_REVIEW"].includes(draft.state), "already_reviewed", "Draft was already registered or associated.");
           draft.version = increment(draft.version); entityId = draft.id;
@@ -84,13 +87,15 @@ export class PlatformEngine {
             draft.institutionId = cmd.institutionId; draft.verified = true; draft.state = "UNDER_REVIEW"; draft.reviewerId = user.id;
           } else if (cmd.type === "draft.register") {
             reject(draft.verified && draft.institutionId && draft.reviewerId, "unverified_draft", "Human verification must precede registration.");
+            reject(!s.translations?.some(t=>t.draftId===draft.id&&!t.correctedBy), "translation_review_required", "Review the persisted translation against the original before registration.");
             reject(s.categories.some((k) => k.id === cmd.categoryId), "invalid_category", "A configured case category is required.", 400);
             reject(!s.matches.some((m) => m.draftId === draft.id && ["PENDING", "DUPLICATE"].includes(m.decision)), "duplicate_review_required", "Review pending candidates; confirmed duplicates require explicit association.");
             const officer = s.staff.find((u) => u.id === cmd.officerId && u.active);
+            reject(cmd.officerId === user.id || role(user, "BUREAU_HEAD", draft.bureauId, now), "forbidden", "Officers may register only their own assignments.", 403);
             reject(officer && role(officer, "CASE_OFFICER", draft.bureauId, now), "invalid_assignee", "The officer needs current Bureau membership and role.", 400);
             changed = { id: this.uuid(), caseNumber: s.nextCaseNumber, institutionId: draft.institutionId, categoryId: cmd.categoryId,
               bureauId: draft.bureauId, officerId: cmd.officerId, subject: draft.subject, summary: draft.body,
-              status: "NEW", priority: cmd.priority, receivedAt: draft.receivedAt, updatedAt: now, disposedAt: null, version: "1" };
+              status: "NEW", priority: cmd.priority, receivedAt: draft.receivedAt, updatedAt: now, disposedAt: null, version: "1", discoverable: cmd.discoveryAllowed ?? false,source:draft.source,sourceReference:draft.sourceReference };
             s.nextCaseNumber = increment(s.nextCaseNumber); s.cases.push(changed); entityId = changed.id;
             draft.state = "ACCEPTED"; draft.linkedCaseId = changed.id;
           } else if (cmd.type === "draft.associate") {
@@ -111,13 +116,15 @@ export class PlatformEngine {
         reject(row, "not_found", "The notification is unavailable.", 404); row.readAt = now; entityId = row.id;
       } else if (cmd.type === "access.request") {
         // No object-existence oracle: requests require existing authorized details.
-        const c = requireCase(s, user, cmd.caseId, now);
+        const c = s.cases.find((c) => c.id === cmd.caseId && (canRead(s, user, c, now) || c.discoverable && discoveryAllowed(user, now)));
+        reject(c, "not_found", "No permitted discovery record is available.", 404);
         reject(Date.parse(cmd.until) > Date.parse(now) && Date.parse(cmd.until) <= Date.parse(now) + 7 * 86400000, "invalid_expiry", "Requests must expire within seven days.", 400);
         s.accessRequests.push({ id: entityId, caseId: c.id, requesterId: user.id, scope: cmd.scope, until: cmd.until, reason: cmd.reason, status: "PENDING", reviewerId: null });
       } else {
         reject("caseId" in cmd && "expectedVersion" in cmd, "invalid_command", "A versioned case command is required.", 400);
         const c = requireCase(s, user, cmd.caseId, now, true); entityId = c.id;
         reject(c.version === cmd.expectedVersion, "stale_version", "This case changed. Reload before retrying.");
+        reject(c.status !== "DISPOSED", "disposed_read_only", "Disposed cases are read-only until an authorized reopening workflow is approved.");
         changed = c;
         switch (cmd.type) {
           case "case.assign": {
@@ -162,15 +169,6 @@ export class PlatformEngine {
             reject(officer && role(officer, "CASE_OFFICER", cmd.bureauId, now), "invalid_assignee", "Destination officer is not currently authorized.");
             s.transfers.push({ id: this.uuid(), caseId: c.id, fromBureauId: c.bureauId, toBureauId: cmd.bureauId, officerId: cmd.officerId, reason: cmd.reason, status: "REQUESTED", requestedBy: user.id, expectedVersion: increment(c.version) }); break;
           }
-          case "transfer.decide": {
-            const t = s.transfers.find((t) => t.id === cmd.transferId && t.caseId === c.id && t.status === "REQUESTED");
-            reject(t && t.expectedVersion === c.version && t.requestedBy !== user.id, "stale_transfer", "Transfer needs an independent current approver.");
-            reject(role(user, "BUREAU_HEAD", t.fromBureauId, now) && role(user, "BUREAU_HEAD", t.toBureauId, now), "dual_bureau_authority_required", "Both source and destination approval authority are required.", 403);
-            const target = s.staff.find((u) => u.id === t.officerId && u.active);
-            reject(target && role(target, "CASE_OFFICER", t.toBureauId, now), "invalid_assignee", "Destination officer authority changed; review the transfer again.");
-            if (cmd.decision === "COMPLETED") { c.bureauId = t.toBureauId; c.officerId = t.officerId; }
-            t.status = cmd.decision; break; // SLA original/current timestamps remain unchanged.
-          }
           case "finding.review": {
             head(c); const f = s.findings.find((f) => f.id === cmd.findingId && f.caseIds.includes(c.id));
             reject(f && f.caseIds.every((id) => authorizedSnapshot(s, p, now).cases.some((x) => x.id === id)), "not_found", "Finding unavailable.", 404);
@@ -181,10 +179,10 @@ export class PlatformEngine {
             const policy = s.policies.find((r) => r.id === cmd.policyId && r.approved && current(r.from, r.until, now));
             reject(policy, "policy_unavailable", "An approved current policy is required.");
             const tests = {
-              EVIDENCE: s.evidence.some((e) => e.caseId === c.id && e.status === "VERIFIED" && e.scan === "CLEAN"),
+              EVIDENCE: s.evidence.some((e) => e.caseId === c.id && e.status === "VERIFIED" && (e.scan === "CLEAN" || e.scan==='NOT_REQUIRED'&&e.mediaType==='text/plain')),
               TASKS: !s.tasks.some((t) => t.caseId === c.id && !["COMPLETED", "CANCELLED"].includes(t.status)),
               DEPENDENCIES: !s.relationships.some((r) => r.sourceId === c.id && r.type === "DEPENDS_ON" && r.status === "CONFIRMED" && s.cases.find((x) => x.id === r.targetId)?.status !== "DISPOSED"),
-              FINDINGS: !s.findings.some((f) => f.caseIds.includes(c.id) && ["DETECTED", "CONFIRMED"].includes(f.status)),
+              FINDINGS: !s.findings.some((f) => f.caseIds.includes(c.id) && ["DETECTED", "CONFIRMED"].includes(f.status))&&!s.conflicts?.some(f=>f.caseIds.includes(c.id)&&['DETECTED','CONFIRMED'].includes(f.status)),
               APPROVAL: role(user, "BUREAU_HEAD", c.bureauId, now),
             };
             const checks = policy.requirements.map((code) => ({ code, pass: tests[code] }));

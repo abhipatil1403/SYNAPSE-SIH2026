@@ -3,6 +3,7 @@ import { platformServer, platformFailure } from "@/lib/platform/server";
 import { PlatformError } from "@/lib/platform/contracts";
 import { requireSameOrigin, smallJson } from "@/lib/live/request";
 import { activation } from "@/lib/platform/repository";
+import { workbenchConfig } from "@/lib/workbench/config";
 export const runtime = "nodejs";
 export async function GET(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   try {
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   try {
     // No request, environment or Demo actor can unlock live writes.
-    if (!activation.businessWrites) throw new PlatformError(503, "business_writes_locked", "Live business writes remain disabled by Phase 2 security sign-off.");
+    if (!activation.businessWrites && !workbenchConfig()) throw new PlatformError(503, "business_writes_locked", "Hosted business writes remain disabled; only an explicitly configured isolated development database accepts these commands.");
     const { path } = await params;
     if (path.join("/") !== "commands") throw new PlatformError(404, "not_found", "Command route unavailable.");
     requireSameOrigin(request, process.env.SYNAPSE_APP_ORIGIN ?? "http://localhost:3000");
