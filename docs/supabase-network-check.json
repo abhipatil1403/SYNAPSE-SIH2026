@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-10-26T08:21:52.543Z",
+  "project": "SYNAPSE",
+  "checks": [
+    {
+      "name": "auth-health",
+      "status": 200,
+      "code": null
+    },
+    {
+      "name": "private-schema-access",
+      "status": 406,
+      "code": "PGRST106"
+    }
+  ],
+  "liveWorkflowsEnabled": false
+}

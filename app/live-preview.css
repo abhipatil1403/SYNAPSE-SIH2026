@@ -1,0 +1,333 @@
+.live-preview {
+  max-width: 1640px;
+  margin: 0 auto;
+  padding: 20px;
+  color: var(--ink);
+}
+.live-preview-topbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 22px;
+  background: var(--surface, #f8f9f8);
+  border-radius: 24px;
+}
+.live-preview-brand {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 22px;
+  color: var(--green, #196c45);
+}
+.live-preview-topbar > .btn {
+  margin-left: auto;
+}
+.live-preview-topbar .badge {
+  display: inline-flex;
+  gap: 6px;
+  font-size: 12px;
+}
+.live-preview-workspace {
+  margin-top: 18px;
+  background: #f5f7f5;
+  border: 1px solid #fff;
+  border-radius: 28px;
+  padding: 28px;
+}
+.live-preview-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.live-preview-heading h1 {
+  font-size: 34px;
+  letter-spacing: -1.4px;
+  margin: 7px 0 8px;
+}
+.live-preview-heading p {
+  font-size: 14px;
+  color: #6f7d74;
+  line-height: 1.6;
+}
+.live-preview-heading .eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  color: #236c49;
+}
+.live-preview-account {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+}
+.live-preview-account strong {
+  font-size: 15px;
+}
+.live-preview-account span {
+  font-size: 12px;
+  color: #6f7d74;
+}
+.live-preview-state {
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  padding: 30px;
+  text-align: center;
+}
+.live-preview-state h2,
+.live-preview-signin h2 {
+  font-size: 22px;
+}
+.live-preview-state p,
+.live-preview-signin > p {
+  color: #69776e;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.live-preview-signin {
+  max-width: 440px;
+  margin: 34px auto;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.live-preview-signin input {
+  min-height: 44px;
+}
+.live-preview-signin button {
+  min-height: 44px;
+}
+.live-preview-error {
+  color: #a14c26;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.live-registry {
+  padding: 22px;
+}
+.live-registry-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.live-registry-summary h2 {
+  font-size: 21px;
+}
+.live-registry-summary .badge {
+  display: flex;
+  gap: 5px;
+}
+.live-registry-filters {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.live-registry-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 12px;
+  color: #66756b;
+}
+.live-registry-filters select,
+.live-registry-filters input {
+  min-height: 42px;
+  font-size: 13px;
+}
+.live-registry-search {
+  flex: 1;
+  min-width: 240px;
+}
+.live-registry-search > span:last-child {
+  display: flex;
+  align-items: center;
+  border: 1px solid #e5eae5;
+  border-radius: 24px;
+  padding-left: 13px;
+  background: white;
+}
+.live-registry-search input {
+  border: 0;
+  background: transparent;
+  width: 100%;
+  min-width: 0;
+}
+.live-registry-filters .btn {
+  min-height: 42px;
+}
+.live-registry-table {
+  width: 100%;
+  overflow-x: auto;
+}
+.live-registry-table table {
+  width: 100%;
+  min-width: 1020px;
+  border-collapse: collapse;
+  text-align: left;
+}
+.live-registry-table th {
+  color: #7b877f;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 13px 12px;
+  border-bottom: 1px solid #e8ece8;
+}
+.live-registry-table td {
+  padding: 17px 12px;
+  border-bottom: 1px solid #edf0ed;
+  font-size: 13px;
+}
+.live-registry-table td:first-child {
+  min-width: 260px;
+  max-width: 350px;
+}
+.live-registry-table td strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+.live-registry-table td:first-child span {
+  font-size: 12px;
+  color: #768279;
+  line-height: 1.7;
+}
+.live-registry-table .badge {
+  white-space: nowrap;
+  font-size: 11px;
+}
+.live-registry-empty {
+  padding: 42px 18px;
+  text-align: center;
+  color: #718076;
+}
+.live-registry-empty svg {
+  margin: 0 auto 12px;
+}
+.live-registry-empty h3 {
+  font-size: 17px;
+  color: #203729;
+  margin-bottom: 8px;
+}
+.live-registry-empty p {
+  font-size: 13px;
+}
+.live-registry-pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding-top: 18px;
+  font-size: 12px;
+  color: #6c7b71;
+}
+.live-registry-pagination > span {
+  margin-right: auto;
+}
+.live-preview-footnote {
+  font-size: 11px;
+  color: #7e8c82;
+  margin-top: 22px;
+  line-height: 1.7;
+}
+@media (max-width: 760px) {
+  .live-preview {
+    padding: 10px;
+  }
+  .live-preview-topbar {
+    flex-wrap: wrap;
+    padding: 16px;
+    gap: 12px;
+  }
+  .live-preview-topbar > .badge {
+    order: 3;
+    width: 100%;
+  }
+  .live-preview-workspace {
+    padding: 20px 14px;
+  }
+  .live-preview-heading {
+    flex-direction: column;
+  }
+  .live-preview-account {
+    align-items: flex-start;
+    text-align: left;
+  }
+  .live-preview-heading h1 {
+    font-size: 29px;
+  }
+  .live-registry {
+    padding: 16px;
+  }
+  .live-registry-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .live-registry-filters label {
+    flex: 1;
+    min-width: 130px;
+  }
+  .live-registry-filters .live-registry-search {
+    min-width: 100%;
+  }
+  .live-registry-pagination {
+    flex-wrap: wrap;
+  }
+  .live-registry-pagination > span {
+    flex: 1 1 100%;
+  }
+  .live-preview-signin {
+    padding: 22px;
+  }
+  .live-preview-state {
+    padding: 24px 16px;
+  }
+}
+.live-readiness {
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  border: 1px solid #dfe7df;
+  border-radius: 16px;
+  background: #fff;
+}
+.live-readiness summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+.live-readiness > p {
+  font-size: 12px;
+  color: #647369;
+  margin: 10px 0;
+}
+.live-readiness ul {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  gap: 8px;
+}
+.live-readiness li {
+  padding: 10px 0;
+  border-top: 1px solid #edf1ed;
+}
+.live-readiness li strong {
+  display: block;
+  font-size: 12px;
+}
+.live-readiness li span {
+  display: block;
+  font-size: 12px;
+  color: #647369;
+  margin-top: 4px;
+}

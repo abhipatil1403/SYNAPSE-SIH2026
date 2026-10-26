@@ -1,0 +1,24 @@
+node_modules/
+.next/
+out/
+.env*
+!.env.example
+!.env.operator.example
+*.tsbuildinfo
+playwright-report/
+test-results/
+*.log
+.local/
+# Operator certificates and generated security evidence are local artifacts.
+*.crt
+*.cer
+*.pem
+*.key
+*.pfx
+*.vault
+docs/screenshots/
+docs/phase1/*.json
+docs/phase2/*.json
+docs/phase3-5/*results.json
+docs/phase3-5/*evidence.json
+supabase/.temp/

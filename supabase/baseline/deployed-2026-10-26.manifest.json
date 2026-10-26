@@ -1,0 +1,15 @@
+{
+  "project": "xjnukuerzlrxjjqwmgkn",
+  "capturedAt": "2026-10-26T10:30:34.824179+00:00",
+  "postgresVersion": "17.11",
+  "scope": "synapse schema and five reference-data tables; not a managed-service or operational-data backup",
+  "tables": 69,
+  "columns": 630,
+  "constraints": 440,
+  "functions": 30,
+  "policies": 32,
+  "triggers": 7,
+  "views": 1,
+  "catalogSha256": "11037d0662d0889f2e66db29026dbc4bee58ff643af4573cb5af728e10ca8dd6",
+  "sqlSha256": "7ef9f571c87244e95a80a7d015cfa7c9f28c184128c9bbd09106966a5a8256e9"
+}

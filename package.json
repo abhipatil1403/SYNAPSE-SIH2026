@@ -1,0 +1,47 @@
+{
+  "name": "synapse-sih2026",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build",
+    "start": "next start --hostname 0.0.0.0",
+    "lint": "eslint app components lib tests --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "test:e2e": "playwright test",
+    "baseline:check": "node scripts/baseline.mjs --check",
+    "test:database": "node scripts/test-database.mjs",
+    "test:database:phase2": "node scripts/test-database.mjs --phase2",
+    "phase2:audit": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase2/hosted-audit.mjs",
+    "phase2:provision:check": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase2/provision.mjs",
+    "phase2:test:auth": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase2/verify-auth.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.118.0",
+    "@xyflow/react": "^12.12.0",
+    "lucide-react": "^1.61.0",
+    "next": "^16.4.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "recharts": "^3.10.1",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.6.5",
+    "@types/pg": "8.15.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.4.3",
+    "pg": "8.16.3",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3"
+  }
+}

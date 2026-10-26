@@ -1,0 +1,917 @@
+/* Overview calibration against fernly-reference-04, at equivalent desktop widths.
+   Domain data and the full Calendar page retain their existing contracts. */
+:root {
+  --dashboard-gap: 14px;
+  --dashboard-card-padding: 20px;
+  --dashboard-label: 13px;
+  --dashboard-heading: 19px;
+  --dashboard-motion: 220ms;
+}
+
+/* Shared chrome: readable controls and an independently scrolling navigation. */
+.sidebar nav {
+  flex: 1;
+  min-height: 0;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.brand,
+.workspace-switch,
+.sidebar-bottom {
+  flex-shrink: 0;
+}
+.nav-link {
+  font-size: 14px;
+  min-height: 40px;
+  height: auto;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  gap: 10px;
+  line-height: 1.4;
+}
+.nav-link svg {
+  width: 20px;
+  height: 20px;
+}
+.nav-link.active {
+  font-weight: 650;
+}
+.nav-link.active::before {
+  width: 5px;
+  top: 6px;
+  bottom: 6px;
+}
+.nav-label {
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+.nav-count {
+  font-size: 11px;
+  min-width: 21px;
+  text-align: center;
+}
+.workspace-switch strong {
+  font-size: 12px;
+}
+.workspace-switch small {
+  font-size: 10px;
+}
+.global-search {
+  font-size: 13px;
+}
+.global-search kbd {
+  font-size: 11px;
+}
+.user-trigger strong {
+  font-size: 13px;
+}
+.user-trigger small {
+  font-size: 11px;
+}
+.topbar .avatar {
+  width: 40px;
+  height: 40px;
+  font-size: 12px;
+}
+.demo-pill {
+  font-size: 11px;
+}
+.role-switch {
+  font-size: 11px;
+}
+.role-switch select {
+  font-size: 11px;
+  min-height: 30px;
+}
+
+.overview-shell .topbar {
+  min-height: 66px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.overview-shell .workspace-meta {
+  padding-top: 7px;
+  padding-bottom: 7px;
+  font-size: 11px;
+}
+.overview-shell .main-workspace {
+  padding: 22px;
+}
+.overview-dashboard .page-heading {
+  margin-bottom: 18px;
+  gap: 16px;
+}
+.overview-dashboard .page-heading h1 {
+  font-size: 34px;
+  line-height: 1.15;
+}
+.overview-dashboard .page-heading p {
+  margin-top: 7px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.overview-dashboard .btn {
+  min-height: 42px;
+  font-size: 13px;
+  padding: 9px 15px;
+}
+.overview-dashboard .btn svg {
+  width: 18px;
+  height: 18px;
+}
+.overview-dashboard .metrics-grid {
+  gap: var(--dashboard-gap);
+  margin-bottom: 18px;
+}
+.overview-dashboard .metric {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  align-items: start;
+  padding: 18px 20px;
+  min-height: 160px;
+  gap: 5px;
+}
+.overview-dashboard .metric-title {
+  font-size: 16px;
+  font-weight: 550;
+  min-height: 36px;
+}
+.overview-dashboard .metric-arrow {
+  width: 36px;
+  height: 36px;
+}
+.overview-dashboard .metric-arrow svg {
+  width: 20px;
+  height: 20px;
+}
+.overview-dashboard .metric > strong {
+  margin: 0;
+  align-self: center;
+  font-size: 52px;
+  line-height: 1.05;
+  letter-spacing: -2px;
+  font-variant-numeric: tabular-nums;
+}
+.overview-dashboard .metric > p {
+  font-size: 12px;
+  line-height: 1.4;
+  gap: 6px;
+}
+.overview-dashboard .metric-dot {
+  width: 5px;
+  height: 5px;
+}
+.overview-dashboard .dashboard-grid {
+  gap: var(--dashboard-gap);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-areas:
+    "analytics analytics analytics analytics analytics analytics deadlines deadlines deadlines calendar calendar calendar"
+    "bureau bureau bureau bureau bureau progress progress progress progress calendar calendar calendar"
+    "recent recent recent recent recent recent activity activity activity findings findings findings";
+  align-items: stretch;
+}
+.overview-dashboard .analytics-card {
+  grid-area: analytics;
+}
+.overview-dashboard .deadline-card {
+  grid-area: deadlines;
+}
+.overview-dashboard .coordination-card {
+  grid-area: bureau;
+}
+.overview-dashboard .progress-card {
+  grid-area: progress;
+}
+.overview-dashboard .recent-card {
+  grid-area: recent;
+}
+.overview-dashboard .activity-card {
+  grid-area: activity;
+}
+.overview-dashboard .intelligence-feature {
+  grid-area: findings;
+}
+.overview-dashboard .quick-calendar-card {
+  grid-area: calendar;
+}
+.overview-dashboard .card,
+.overview-dashboard .intelligence-feature {
+  padding: var(--dashboard-card-padding);
+}
+.overview-dashboard .card-head {
+  min-height: 30px;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.overview-dashboard .card-head h2 {
+  font-size: var(--dashboard-heading);
+  line-height: 1.35;
+  letter-spacing: -0.6px;
+}
+.overview-dashboard .card-subtitle {
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 3px 0 12px;
+}
+.overview-dashboard .icon-link {
+  height: 32px;
+  width: 32px;
+}
+.overview-dashboard .text-btn {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.dashboard-chart-controls {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.overview-dashboard .tiny-select {
+  font-size: 12px;
+  min-height: 32px;
+  padding: 5px 21px 5px 10px;
+}
+.overview-dashboard .bar-chart {
+  height: 210px;
+  width: 100%;
+  margin: 0;
+  position: relative;
+}
+.dashboard-chart-empty {
+  position: absolute;
+  inset: 40% 12px auto 30px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.overview-dashboard .chart-foot {
+  font-size: 11px;
+  margin-top: 8px;
+}
+.overview-dashboard .recharts-bar-rectangle {
+  transition:
+    fill var(--dashboard-motion) ease,
+    opacity var(--dashboard-motion) ease;
+}
+.overview-dashboard .deadline-card {
+  display: flex;
+  flex-direction: column;
+}
+.overview-dashboard .deadline-row {
+  padding: 11px 0;
+  gap: 9px;
+  min-height: 65px;
+}
+.overview-dashboard .deadline-row > div:nth-child(2) {
+  min-width: 0;
+}
+.overview-dashboard .deadline-row strong {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.overview-dashboard .deadline-row p {
+  font-size: 11px;
+  line-height: 1.5;
+  margin-top: 3px;
+}
+.overview-dashboard .date-box {
+  height: 43px;
+  width: 37px;
+  border-radius: 10px;
+}
+.overview-dashboard .date-box strong {
+  font-size: 19px;
+  line-height: 1.1;
+}
+.overview-dashboard .date-box span {
+  font-size: 11px;
+}
+.overview-dashboard .deadline-arrow {
+  display: none;
+}
+.overview-dashboard .deadline-card > .btn {
+  margin-top: auto;
+  min-height: 36px;
+  padding: 6px 9px;
+  font-size: 12px;
+}
+.overview-dashboard .bureau-row {
+  gap: 10px;
+  padding: 9px 0;
+  border-radius: 10px;
+}
+.overview-dashboard .bureau-row:hover {
+  background: #f0f5f1;
+}
+.overview-dashboard .bureau-row > div:first-of-type {
+  min-width: 0;
+}
+.overview-dashboard .bureau-row strong {
+  font-size: 14px;
+  line-height: 1.4;
+}
+.overview-dashboard .bureau-row p {
+  font-size: 12px;
+  line-height: 1.4;
+}
+.overview-dashboard .bureau-symbol {
+  width: 36px;
+  height: 36px;
+}
+.overview-dashboard .bureau-row .badge {
+  font-size: 12px;
+  padding: 4px 7px;
+  min-width: 43px;
+}
+.overview-dashboard .avatar.small {
+  width: 31px;
+  height: 31px;
+  font-size: 10px;
+}
+.overview-dashboard .progress-gauge {
+  width: 280px;
+  max-width: 100%;
+  height: 178px;
+  margin: 5px auto 0;
+}
+.overview-dashboard .progress-gauge > div {
+  inset: 71px 0 0;
+}
+.overview-dashboard .progress-gauge strong {
+  font-size: 54px;
+  line-height: 1;
+  letter-spacing: -2px;
+}
+.overview-dashboard .progress-gauge strong span {
+  font-size: 34px;
+}
+.overview-dashboard .progress-gauge p {
+  font-size: 13px;
+  margin-top: 6px;
+}
+.overview-dashboard .gauge-value {
+  transition:
+    stroke-dasharray 250ms ease,
+    opacity 200ms ease;
+}
+.overview-dashboard .progress-legend {
+  font-size: 12px;
+  margin-top: 9px;
+  gap: 18px;
+}
+.overview-dashboard .legend-dot {
+  width: 8px;
+  height: 8px;
+}
+.overview-dashboard .progress-card .fine-print {
+  font-size: 11px;
+  margin-top: 8px;
+}
+.overview-dashboard .recent-row {
+  padding: 10px 0;
+  gap: 9px;
+}
+.overview-dashboard .recent-row > div {
+  flex: 1;
+}
+.overview-dashboard .recent-row strong {
+  font-size: 14px;
+  line-height: 1.4;
+}
+.overview-dashboard .recent-row p {
+  font-size: 11px;
+  line-height: 1.5;
+  max-width: 100%;
+  margin-top: 2px;
+}
+.overview-dashboard .recent-row .badge {
+  font-size: 11px;
+  padding: 4px 7px;
+}
+.overview-dashboard .case-icon {
+  height: 34px;
+  width: 34px;
+}
+.overview-dashboard .activity-row {
+  padding: 11px 0;
+  gap: 8px;
+  align-items: flex-start;
+}
+.overview-dashboard .activity-row > div {
+  flex: 1;
+  min-width: 0;
+}
+.overview-dashboard .activity-row strong {
+  display: block;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.overview-dashboard .activity-row p {
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.overview-dashboard .activity-row small {
+  font-size: 11px;
+  white-space: nowrap;
+  padding-top: 2px;
+}
+.overview-dashboard .activity-point {
+  width: 27px;
+  height: 27px;
+  flex-shrink: 0;
+}
+.overview-dashboard .intelligence-feature h2 {
+  font-size: 24px;
+  line-height: 1.3;
+  margin-top: 20px;
+}
+.overview-dashboard .intelligence-feature p {
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 12px 0 18px;
+}
+.overview-dashboard .feature-label {
+  font-size: 11px;
+  gap: 6px;
+  letter-spacing: 0.5px;
+}
+.overview-dashboard .feature-label .badge {
+  font-size: 10px;
+}
+.overview-dashboard .workspace-note {
+  font-size: 10px;
+  margin-top: 16px;
+}
+.overview-dashboard .empty {
+  padding: 22px 8px;
+}
+.overview-dashboard .empty p {
+  font-size: 12px;
+}
+
+/* Shared month grid, with a compact rendering only on Overview. */
+.calendar-month abbr,
+.quick-month abbr {
+  text-decoration: none;
+  cursor: default;
+}
+.quick-calendar-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  align-self: start;
+}
+.quick-calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+  margin: 6px 0 10px;
+}
+.quick-calendar-toolbar h3 {
+  font-size: 15px;
+  letter-spacing: -0.4px;
+}
+.quick-calendar-toolbar > div {
+  display: flex;
+  gap: 2px;
+}
+.calendar-nav {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 30px;
+  border-radius: 50%;
+}
+.calendar-nav:hover {
+  background: #e9f1eb;
+  color: var(--green);
+}
+.quick-calendar-week,
+.quick-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+.quick-calendar-week {
+  margin-bottom: 5px;
+}
+.quick-calendar-week > span {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 3px 0;
+}
+.quick-calendar-day {
+  min-width: 0;
+  min-height: 33px;
+  padding: 2px 0;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+.quick-calendar-day .day-number {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 23px;
+  font-size: 12px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.quick-calendar-day.outside {
+  color: #8b948e;
+}
+.quick-calendar-day:hover {
+  background: #e9f1eb;
+}
+.quick-calendar-day.selected {
+  background: #e2eee5;
+  box-shadow: inset 0 0 0 1px #b2cbb9;
+  color: var(--deep);
+}
+.quick-calendar-day.today .day-number {
+  background: var(--green);
+  color: white;
+  border-radius: 50%;
+}
+.calendar-indicators {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  height: 5px;
+  align-items: center;
+}
+.calendar-indicators i,
+.quick-calendar-legend i {
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  background: var(--green);
+  border-radius: 50%;
+}
+.calendar-indicators i.review,
+.quick-calendar-legend i.review {
+  background: #a87920;
+}
+.quick-agenda-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  margin: 15px 0 7px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.quick-agenda-head h3 {
+  font-size: 13px;
+}
+.quick-agenda-head h3 span {
+  font-weight: 400;
+  color: var(--muted);
+}
+.today-shortcut {
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  min-height: 29px;
+}
+.today-shortcut:hover {
+  background: #e9f1eb;
+}
+.quick-agenda {
+  max-height: 158px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.quick-agenda-empty {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 2px 0 9px;
+}
+.quick-agenda-event {
+  display: block;
+  border-left: 3px solid #9fc9ad;
+  padding: 3px 0 3px 9px;
+  margin: 7px 0 10px;
+  border-radius: 2px;
+}
+.quick-agenda-event.review {
+  border-color: #c3a15f;
+}
+.quick-agenda-event:hover strong {
+  color: var(--green);
+}
+.quick-agenda-event strong {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.45;
+}
+.quick-agenda-event > span {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 3px;
+  line-height: 1.5;
+}
+.quick-upcoming-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: 7px;
+}
+.quick-calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 9px 0 12px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.quick-calendar-legend > span {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.quick-calendar-legend i {
+  width: 5px;
+  height: 5px;
+}
+.overview-dashboard .quick-calendar-open {
+  margin-top: auto;
+  font-size: 12px;
+  padding: 7px;
+  min-height: 38px;
+}
+.quick-calendar-loading {
+  padding: 16px 0;
+}
+.quick-calendar-loading .skeleton {
+  height: 200px;
+}
+.quick-calendar-loading p,
+.quick-calendar-message p {
+  font-size: 12px;
+  margin-top: 10px;
+}
+.overview-dashboard .dashboard-grid > *,
+.overview-dashboard .metric {
+  animation: dashboard-enter var(--dashboard-motion) ease both;
+}
+.overview-dashboard .card:hover {
+  box-shadow: 0 3px 14px #0d3a230c;
+}
+.month-enter {
+  animation: month-enter 170ms ease;
+}
+@keyframes dashboard-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes month-enter {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 1450px) and (min-width: 1101px) {
+  .overview-dashboard .card-head h2 {
+    font-size: 17px;
+  }
+  .overview-dashboard .card,
+  .overview-dashboard .intelligence-feature {
+    padding: 18px;
+  }
+  .overview-dashboard .metric {
+    padding: 17px 18px;
+  }
+  .overview-dashboard .metric-title {
+    font-size: 15px;
+  }
+  .overview-dashboard .bureau-row .avatar-stack {
+    display: none;
+  }
+  .overview-dashboard .recent-row > .avatar {
+    display: none;
+  }
+  .overview-dashboard .recent-row strong {
+    font-size: 13px;
+  }
+  .overview-dashboard .activity-row {
+    flex-wrap: wrap;
+  }
+  .overview-dashboard .activity-row small {
+    margin-left: 35px;
+    margin-top: -6px;
+  }
+  .overview-dashboard .activity-row > div {
+    min-width: calc(100% - 40px);
+  }
+}
+@media (max-width: 1100px) {
+  .overview-dashboard .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: "analytics analytics" "deadlines calendar" "bureau calendar" "progress findings" "recent recent" "activity activity";
+  }
+  .overview-dashboard .metric-title {
+    font-size: 14px;
+  }
+  .overview-dashboard .metric > strong {
+    font-size: 46px;
+  }
+  .overview-dashboard .metric > p {
+    font-size: 11px;
+  }
+  .overview-dashboard .bar-chart {
+    height: 220px;
+  }
+  .overview-dashboard .activity-row small {
+    margin-left: auto;
+  }
+}
+@media (max-width: 760px) {
+  .overview-shell .main-workspace {
+    padding: 20px 14px;
+  }
+  .overview-shell .workspace-meta {
+    font-size: 10px;
+  }
+  .overview-dashboard .page-heading h1 {
+    font-size: 29px;
+  }
+  .overview-dashboard .page-heading p {
+    font-size: 13px;
+  }
+  .overview-dashboard .page-heading {
+    gap: 12px;
+  }
+  .overview-dashboard .heading-actions .btn {
+    font-size: 12px;
+    min-height: 42px;
+  }
+  .overview-dashboard .metrics-grid {
+    gap: 10px;
+  }
+  .overview-dashboard .metric {
+    padding: 14px;
+    min-height: 156px;
+  }
+  .overview-dashboard .metric-title {
+    font-size: 13px;
+    align-items: flex-start;
+    line-height: 1.4;
+  }
+  .overview-dashboard .metric-arrow {
+    height: 28px;
+    width: 28px;
+    flex-shrink: 0;
+  }
+  .overview-dashboard .metric-arrow svg {
+    height: 17px;
+    width: 17px;
+  }
+  .overview-dashboard .metric > strong {
+    font-size: 43px;
+  }
+  .overview-dashboard .metric > p {
+    font-size: 11px;
+  }
+  .overview-dashboard .dashboard-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .overview-dashboard .quick-calendar-card {
+    order: 2;
+    align-self: stretch;
+  }
+  .overview-dashboard .analytics-card {
+    order: 0;
+  }
+  .overview-dashboard .deadline-card {
+    order: 1;
+  }
+  .overview-dashboard .coordination-card {
+    order: 3;
+  }
+  .overview-dashboard .progress-card {
+    order: 4;
+  }
+  .overview-dashboard .recent-card {
+    order: 5;
+  }
+  .overview-dashboard .intelligence-feature {
+    order: 6;
+  }
+  .overview-dashboard .activity-card {
+    order: 7;
+  }
+  .overview-dashboard .card-head h2 {
+    font-size: 18px;
+  }
+  .overview-dashboard .card,
+  .overview-dashboard .intelligence-feature {
+    padding: 18px;
+  }
+  .overview-dashboard .card-head {
+    flex-wrap: wrap;
+  }
+  .overview-dashboard .bar-chart {
+    height: 205px;
+  }
+  .overview-dashboard .chart-foot {
+    font-size: 10px;
+  }
+  .overview-dashboard .recent-row {
+    flex-wrap: wrap;
+  }
+  .overview-dashboard .recent-row strong {
+    font-size: 13px;
+  }
+  .overview-dashboard .recent-row > .badge {
+    margin-left: 43px;
+    margin-top: -4px;
+  }
+  .overview-dashboard .recent-row > div {
+    min-width: calc(100% - 44px);
+  }
+  .overview-dashboard .recent-row p {
+    font-size: 11px;
+  }
+  .overview-dashboard .activity-row small {
+    font-size: 11px;
+  }
+  .overview-dashboard .progress-gauge {
+    width: 280px;
+  }
+  .quick-calendar-day {
+    min-height: 40px;
+  }
+  .quick-calendar-day .day-number {
+    font-size: 13px;
+  }
+  .calendar-nav {
+    width: 36px;
+    height: 36px;
+  }
+  .quick-calendar-toolbar h3 {
+    font-size: 17px;
+  }
+  .quick-agenda-event strong {
+    font-size: 14px;
+  }
+  .quick-agenda-event > span {
+    font-size: 12px;
+  }
+  .quick-agenda {
+    max-height: 190px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .overview-dashboard *,
+  .overview-dashboard *::before,
+  .overview-dashboard *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .nav-link {
+    font-size: 15px;
+  }
+  .global-search {
+    font-size: 14px;
+  }
+  .user-trigger strong {
+    font-size: 14px;
+  }
+  .topbar .icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+  .topbar .avatar {
+    width: 42px;
+    height: 42px;
+  }
+}
