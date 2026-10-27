@@ -27,3 +27,9 @@ export function reviewedExpiry(value: string, original: string | null) {
   // when an administrator leaves the displayed local expiry unchanged.
   return original && value === localExpiryValue(original) ? original : new Date(value).toISOString();
 }
+
+export function approvalExpiry(value: string, now = Date.now()) {
+  const expires = new Date(value).getTime();
+  if (!Number.isFinite(expires) || expires < now + 3600000 || expires > now + 90 * 86400000) throw new Error("Choose an assignment expiry at least one hour ahead and within 90 days.");
+  return new Date(expires).toISOString();
+}

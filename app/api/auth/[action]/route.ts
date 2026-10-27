@@ -82,7 +82,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return ctx.respond({ ...result, destination: "/login" });
     }
     if (action === "refresh") {
-      const { error } = await ctx.client.auth.refreshSession(); if (error) ctx.clear(); providerFailure(error);
+      const { error } = await ctx.client.auth.refreshSession();
+      if (error) { ctx.clear(); throw new Phase1Error(error.status === 429 ? 429 : error.status && error.status >= 500 ? 503 : 401, "session_refresh_failed", "Your session could not be refreshed. Sign in again."); }
       const resolved = await ctx.account(); return ctx.respond({ account: resolved.account, destination: accountDestination(resolved.account), liveEnabled: false });
     }
     if (action === "role") {

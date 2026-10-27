@@ -12,6 +12,10 @@ test("real unauthenticated routes, CSRF, malformed identity and recovery replay 
   const protectedPage = await request.get("/officer/dashboard", { maxRedirects: 0 });
   expect(protectedPage.status()).toBe(307); expect(protectedPage.headers().location).toMatch(/\/login$/);
   expect((await request.get("/api/auth/session")).status()).toBe(401);
+  const invalidSession = await request.post("/api/auth/refresh", { headers: { Origin: "http://localhost:3000", Cookie: "synapse-auth-session=malformed-test-cookie" }, data: {} });
+  expect(invalidSession.status()).toBe(401);
+  expect((await invalidSession.json()).error.message).toContain("Sign in again");
+  expect(invalidSession.headersArray().filter(h => h.name.toLowerCase() === "set-cookie").map(h => h.value).join("\n")).toMatch(/synapse-auth-session=;[^\n]*Max-Age=0/i);
   expect((await request.get("/api/auth/roles")).status()).toBe(401);
   expect((await request.post("/api/auth/role", { headers: { Origin: "http://localhost:3000" }, data: {
     requestId: "50000000-0000-4000-8000-000000000011", assignmentId: "50000000-0000-4000-8000-000000000012",

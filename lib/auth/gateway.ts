@@ -31,6 +31,7 @@ export async function gateway(operation: "read" | "account" | "limit" | "members
   } catch (error) {
     await connection.query("ROLLBACK");
     const code = (error as { code?: string }).code;
+    if (code === "23505" && operation === "account" && action === "decide") throw new Phase1Error(409, "identity_reconciliation_required", "This email is attached to a retained account. An owner must reconcile the deleted identity before approval. No access was granted.");
     if (["22023", "22007", "22P02"].includes(code ?? "")) throw new Phase1Error(400, "invalid_input", "Check the required fields and approved expiry limits.");
     throw new Phase1Error(code === "42501" ? 403 : code === "28000" ? 401 : ["40001", "23505"].includes(code ?? "") ? 409 : 503,
       code === "40001" ? "stale_account" : "authorization_unavailable", code === "42501" ? "Current authorization or a valid recovery link is required." : "The authorized operation could not be completed. Reload and try again.");

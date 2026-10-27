@@ -1,3 +1,4 @@
+import {approvalExpiry} from '../lib/auth/administration';
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { validatedClaims, accountDestination, accountSchema, signupSchema } from "../lib/auth/policy";
@@ -14,4 +15,10 @@ test("unapproved accounts route to pending; registration cannot submit privilege
   assert.equal(accountDestination(accountSchema.parse({ status: "PENDING_APPROVAL", roles: [], memberships: [] })), "/pending-approval");
   assert.equal(signupSchema.safeParse({ email: "local@example.invalid", name: "Local", password: "long-local-test-password", role: "SYSTEM_ADMIN" }).success, false);
   assert.equal(signupSchema.safeParse({ email: "local@example.invalid", name: "Local", password: "short" }).success, false);
+});
+
+test("approval expiry validates missing, past, too-short and overlong assignments with timezone accuracy",()=>{
+ const now=Date.parse("2026-10-27T05:00:00Z");
+ assert.equal(approvalExpiry("2026-10-28T10:30:00+05:30",now),"2026-10-28T05:00:00.000Z");
+ for(const value of ["","invalid","2026-10-26T05:00:00Z",new Date(now+3599000).toISOString(),new Date(now+91*86400000).toISOString()])assert.throws(()=>approvalExpiry(value,now),/at least one hour/);
 });
