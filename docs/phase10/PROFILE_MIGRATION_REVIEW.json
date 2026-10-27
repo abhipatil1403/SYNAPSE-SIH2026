@@ -1,0 +1,9 @@
+{
+  "migration": "20261027075125_phase10_self_profile.sql",
+  "sha256": "519a64cbae667dc024d9fffb27d3ffc54921026e35e4666e646c433ad897ebba",
+  "localAuthorizationPassed": true,
+  "hostedApplied": true,
+  "scope": "Self display-name only, audited private gateway; no managed Auth or complaint writes",
+  "readGateEnabled": false,
+  "checkedAt": "2026-10-27T08:03:26.951Z"
+}

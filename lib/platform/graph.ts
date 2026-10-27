@@ -7,7 +7,7 @@ export function caseGraph(snapshot: Snapshot, query = "", includeProposed = fals
   const nodes = new Map<string, CaseGraphNode>(), edges: CaseGraphEdge[] = [], ids = new Set(cases.map((c) => c.id));
   for (const c of cases) {
     const key = "case:" + c.id;
-    nodes.set(key, { id: key, kind: "CASE", label: `#${c.caseNumber} · ${c.subject}`, href: "/platform/cases/" + c.id });
+    nodes.set(key, { id: key, kind: "CASE", label: `#${c.caseNumber} · ${c.subject}`, href: "/complaints/" + c.id });
     for (const [kind, id, label, relation] of [
       ["INSTITUTION", c.institutionId, snapshot.institutions.find((i) => i.id === c.institutionId)?.name, "SAME_INSTITUTION_CONTEXT"],
       ["BUREAU", c.bureauId, snapshot.bureaus.find((b) => b.id === c.bureauId)?.name, "LEAD_BUREAU"],
@@ -20,6 +20,6 @@ export function caseGraph(snapshot: Snapshot, query = "", includeProposed = fals
   }
   for (const r of snapshot.relationships) if (ids.has(r.sourceId) && ids.has(r.targetId) && (r.status === "CONFIRMED" || includeProposed && r.status === "PROPOSED"))
     edges.push({ id: r.id, source: "case:" + r.sourceId, target: "case:" + r.targetId, type: r.type + (r.status === "PROPOSED" ? " · PROPOSED" : ""), derived: false });
-  for(const action of snapshot.actions??[])if(ids.has(action.caseId)){const key='action:'+action.id;nodes.set(key,{id:key,kind:'ACTION',label:action.type+' · '+action.topic,href:'/platform/cases/'+action.caseId});edges.push({id:key+':case',source:'case:'+action.caseId,target:key,type:'RECORDED_ACTION',derived:false});}
+  for(const action of snapshot.actions??[])if(ids.has(action.caseId)){const key='action:'+action.id;nodes.set(key,{id:key,kind:'ACTION',label:action.type+' · '+action.topic,href:'/complaints/'+action.caseId});edges.push({id:key+':case',source:'case:'+action.caseId,target:key,type:'RECORDED_ACTION',derived:false});}
   return { nodes: [...nodes.values()], edges };
 }

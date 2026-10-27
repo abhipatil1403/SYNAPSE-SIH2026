@@ -1,0 +1,19 @@
+{
+  "checkedAt": "2026-10-27T11:21:06.672Z",
+  "source": "Actual hosted Supabase Auth, production original dashboard, disposable PostgreSQL; no seeded business records or mocked APIs",
+  "browserExitCode": 0,
+  "counts": {
+    "institutions": 1,
+    "drafts": 1,
+    "cases": 1,
+    "tasks": 1,
+    "sla": 1,
+    "events": 1,
+    "evidence": 1,
+    "activity": 22,
+    "receipts": 19
+  },
+  "cancelledEvents": 1,
+  "disposedCases": 1,
+  "reportAudits": 1
+}

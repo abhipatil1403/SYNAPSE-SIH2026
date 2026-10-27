@@ -15,6 +15,11 @@ const routes = new Set([
   "settings",
   "help",
   "admin",
+  "institutions",
+  "kanban",
+  "graph",
+  "reports",
+  "notifications",
 ]);
 export default async function Page({
   params,

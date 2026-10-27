@@ -2,7 +2,7 @@ import pg from 'pg';
 import {IndicTrans2} from '../../lib/automation/indictrans';
 import assert from 'node:assert/strict';
 import {randomBytes,randomUUID,createHash} from 'node:crypto';
-import {readFile} from 'node:fs/promises';
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {WorkbenchStore,collections,makeWorkbenchPool} from '../../lib/workbench/store';
 import {PlatformEngine} from '../../lib/platform/engine';
 import {platformFixture,principal,fixtureId as id} from '../../tests/fixtures/platform';
@@ -39,6 +39,13 @@ try{
  console.log('PASS real PostgreSQL institution uniqueness, verified intake, registration, durable idempotency and dashboard reconciliation.');
  const competing=await Promise.allSettled([send({type:'case.priority',caseId:first,expectedVersion:'1',priority:'HIGH',reason:'Concurrent engineering update'}),send({type:'comment.add',caseId:first,expectedVersion:'1',body:'Concurrent engineering comment'})]);assert.equal(competing.filter(r=>r.status==='fulfilled').length,1);
  const version=async(caseId:string,n=3)=>(await engine.snapshot(principal(n))).cases.find(c=>c.id===caseId)!.version;
+ const event=await send({type:'event.schedule',caseId:first,expectedVersion:await version(first),title:'Database reviewed hearing',at:new Date(Date.now()+3600000).toISOString(),kind:'HEARING',reason:'Database calendar persistence test'});
+ await send({type:'event.reschedule',caseId:first,expectedVersion:await version(first),eventId:event.entityId,title:'Database revised hearing',at:new Date(Date.now()+7200000).toISOString(),reason:'Reviewed database date change'});
+ await send({type:'event.cancel',caseId:first,expectedVersion:await version(first),eventId:event.entityId,reason:'Audited database cancellation'});
+ assert.ok((await db.query('SELECT body FROM workbench.events WHERE id=$1',[event.entityId])).rows[0].body.cancelledAt);
+ const reportSnapshot=await engine.snapshot(principal());await send({type:'report.export',expectedRevision:reportSnapshot.revision,expectedScope:reportSnapshot.reportScope});
+ assert.equal((await db.query("SELECT count(*)::int n FROM workbench.activity WHERE body->>'type'='report.export'")).rows[0].n,1);
+ console.log('PASS actual SQL calendar rescheduling/cancellation retains prior schedule audit, and current-revision report export persists audit.');
  const discovery=(await engine.snapshot(principal(2))).discovery!.find(c=>c.id===first)!;assert.ok(discovery);assert.ok(!('summary' in discovery)&&!('subject' in discovery));
  const request=await send({type:'access.request',caseId:first,scope:'DETAILS',until:new Date(Date.now()+3600000).toISOString(),reason:'Synthetic independent Bureau access request'},2);
  await send({type:'access.decide',caseId:first,expectedVersion:await version(first),requestId:request.entityId,decision:'APPROVED',reason:'Synthetic source Bureau approval'},3);
@@ -99,6 +106,27 @@ try{
  await send({type:'translation.correct',draftId:source.id,translationId:translated.id,expectedVersion:source.version,subject:'Human-reviewed simulated subject',body:'Human-reviewed simulated body',reason:'Synthetic human correction contract'});
  assert.equal((await engine.snapshot(principal())).drafts.find(d=>d.id===source.id)!.body,'मूळ तक्रार');
  console.log('PASS SIMULATED provider responses through real SQL queue/category/translation persistence; original preserved and human-review gate enforced. No real provider claim.');
+ const categoryOnlyInstitution=await send({type:'institution.create',permanentId:'DEV-FIRST-VECTOR',name:'Synthetic category-only model persistence',region:'',state:''});
+ const categoryOnly=await send({type:'draft.create',sourceReference:'simulated-category-only-vector',source:'MANUAL',subject:'Synthetic initial source',body:'Controlled synthetic provider-contract source',language:'en',bureauId:id(11),institutionId:null});
+ await send({type:'draft.verify',draftId:categoryOnly.entityId,expectedVersion:'1',institutionId:categoryOnlyInstitution.entityId,reason:'Synthetic category-only source verification'});
+ for(let n=0;n<12;n++)if(!await processOneJob(store,{developmentProcessingApproved:true,gemini,translation}))break;
+ const storedVector=(await db.query('SELECT embedding,model_version FROM workbench.draft_indexes WHERE draft_id=$1',[categoryOnly.entityId])).rows[0];assert.equal(storedVector.embedding.length,768);assert.equal(storedVector.model_version,gemini.version);
+ const lexicalIndex=(await db.query("SELECT i.indisvalid FROM pg_index i JOIN pg_class x ON x.oid=i.indexrelid JOIN pg_am a ON a.oid=x.relam WHERE x.relname='candidate_lexemes' AND a.amname='gin'")).rows[0];assert.equal(lexicalIndex.indisvalid,true);
+ console.log('PASS actual PostgreSQL category-only vector/model persistence and valid GIN catalog index using explicitly SIMULATED provider output; no actual Gemini inference or optimizer/index-performance guarantee claimed.');
+ if(process.argv.includes('--real-gemini')){
+  assert.ok(process.env.SYNAPSE_GEMINI_EMBEDDINGS_API_KEY,'Dedicated actual Gemini key required.');
+  const actualGemini=new GeminiEmbeddings(process.env.SYNAPSE_GEMINI_EMBEDDINGS_API_KEY!);
+  const actual=await send({type:'draft.create',sourceReference:'actual-gemini-database-proof',source:'MANUAL',subject:'Authorized fictional classroom capacity complaint',body:'Fictional development complaint about classroom seating capacity. No production or personal data.',language:'en',bureauId:id(11),institutionId:null});
+  await send({type:'draft.verify',draftId:actual.entityId,expectedVersion:'1',institutionId:institution.entityId,reason:'Controlled development source verification for actual Gemini pipeline'});
+  for(let n=0;n<12;n++)if(!await processOneJob(store,{developmentProcessingApproved:true,gemini:actualGemini}))break;
+  const job=(await db.query("SELECT status,payload FROM workbench.jobs WHERE target_id=$1 AND kind='MATCH' ORDER BY created_at DESC LIMIT 1",[actual.entityId])).rows[0];assert.equal(job.status,'SUCCEEDED');assert.equal(job.payload.result.semanticExecuted,true);
+  const snapshot=await engine.snapshot(principal()),candidates=snapshot.matches.filter(m=>m.draftId===actual.entityId);assert.ok(candidates.length>0);assert.ok(candidates.every(m=>m.algorithmVersion===actualGemini.version&&Number.isFinite(m.similarity)&&m.decision==='PENDING'));
+  const vector=(await db.query('SELECT embedding,model_version FROM workbench.draft_indexes WHERE draft_id=$1',[actual.entityId])).rows[0];assert.equal(vector.embedding.length,768);assert.ok(Math.abs(Math.hypot(...vector.embedding)-1)<1e-5);assert.equal(vector.model_version,actualGemini.version);
+  const draft=snapshot.drafts.find(d=>d.id===actual.entityId)!;await send({type:'match.review',draftId:draft.id,expectedVersion:draft.version,matchId:candidates[0].id,decision:'DISTINCT',reason:'Engineering human review of actual model recommendation; no automatic merge'});
+  assert.equal((await engine.snapshot(principal())).matches.find(m=>m.id===candidates[0].id)!.decision,'DISTINCT');
+  await mkdir('docs/phase10',{recursive:true});await writeFile('docs/phase10/GEMINI_DATABASE_EVIDENCE.json',JSON.stringify({checkedAt:new Date().toISOString(),source:'Actual Gemini network inference through real leased PostgreSQL queue; synthetic authorized development identity and fictional records, not a real mailbox or production complaint',actualProvider:true,actualPostgres:true,providerVersion:actualGemini.version,dimensions:768,matchingCandidates:candidates.length,sourceVectorAndModelPersisted:true,humanDecisionPersisted:true,noAutomaticMerge:true,qualityCalibration:'AWAITING USER MANUAL TESTING'},null,2)+'\n');
+  console.log('PASS ACTUAL Gemini API → leased PostgreSQL queue → persisted vectors/model/category/matching recommendations → human decision. Fictional development source and synthetic SQL identity only; no automatic merge or production quality claim.');
+ }
  if(process.argv.includes('--real-translation')){
   assert.ok(process.env.SYNAPSE_INDIC_TRANSLATION_URL&&process.env.SYNAPSE_TRANSLATION_API_KEY,'Configured actual local service required.');
   const realProvider=new IndicTrans2(process.env.SYNAPSE_INDIC_TRANSLATION_URL!,process.env.SYNAPSE_TRANSLATION_API_KEY!),original='हमारे महाविद्यालय में विद्यार्थियों को आवश्यक शैक्षणिक सुविधाएं नहीं मिल रही हैं। कृपया जांच करें।';
@@ -110,6 +138,13 @@ try{
   const after=await engine.snapshot(principal());assert.equal(after.translations!.find(t=>t.id===output.id)!.reviewStatus,'REVIEWED');assert.equal(after.translations!.find(t=>t.id===output.id)!.machineBody,output.machineBody);assert.equal(after.drafts.find(d=>d.id===source.id)!.body,original);
   console.log('PASS ACTUAL IndicTrans2 service → real PostgreSQL leased queue/translation provenance persistence → human-review gate/correction, with original and model text retained. Synthetic development source only; owner quality acceptance pending.');
  }
+ const longBody='Controlled long original complaint. '+ 'x'.repeat(25000),longDraft=await send({type:'draft.create',sourceReference:'long-original-preservation',source:'MANUAL',subject:'Synthetic long source preservation',body:longBody,language:'en',bureauId:id(11),institutionId:null});
+ await send({type:'draft.verify',draftId:longDraft.entityId,expectedVersion:'1',institutionId:institution.entityId,reason:'Synthetic verification of original long complaint'});
+ const longCase=await send({type:'draft.register',draftId:longDraft.entityId,expectedVersion:'2',categoryId:id(14),officerId:id(1),priority:'NORMAL'});
+ assert.equal((await engine.snapshot(principal())).cases.find(c=>c.id===longCase.entityId)!.summary,longBody);
+ await assert.rejects(store.transaction(async state=>{state.cases.find(c=>c.id===longCase.entityId)!.summary='x'.repeat(200001);}));
+ assert.equal((await engine.snapshot(principal())).cases.find(c=>c.id===longCase.entityId)!.summary,longBody);
+ console.log('PASS original complaint beyond 20k characters survives registration/reload intact; invalid generated state rolls back without poisoning subsequent workspace reads.');
  const beforeRollback=(await db.query('SELECT revision FROM workbench.meta')).rows[0].revision;
  await assert.rejects(store.locked(async c=>{await c.query('UPDATE workbench.meta SET revision=revision+999');throw Error('SYNTHETIC_ROLLBACK');}));assert.equal((await db.query('SELECT revision FROM workbench.meta')).rows[0].revision,beforeRollback);
  console.log('PASS failed transaction rolls back persisted revision; no partial commit.');

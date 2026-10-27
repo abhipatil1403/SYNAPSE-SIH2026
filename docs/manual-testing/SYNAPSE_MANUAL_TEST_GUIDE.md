@@ -1,6 +1,6 @@
 # SYNAPSE manual testing — password authentication and IndicTrans2
 
-**Final acceptance: AWAITING USER MANUAL TESTING. Hosted Live Mode and hosted business writes remain disabled.** The current dashboard design and fictional Demo Mode are preserved. This guide supersedes the old email-confirmation signup and Google Cloud Translation instructions.
+**Final acceptance: AWAITING USER MANUAL TESTING. Hosted Live Mode and hosted business writes remain disabled.** The original dashboard design is preserved and now uses real authenticated PostgreSQL. Legacy Demo sources are not an application destination. This guide supersedes the old email-confirmation signup and Google Cloud Translation instructions.
 
 ## 1. Prepare Supabase Auth settings yourself
 
@@ -12,12 +12,12 @@ Keep the allowed recovery redirect pointed at **http://localhost:3000/auth/callb
 
 | Ignored local file | Variable names / purpose |
 |---|---|
-| `.env.local` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_APP_MODE=demo`, `SYNAPSE_PHASE1_READ_ENABLED=false` |
+| `.env.local` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SYNAPSE_PHASE1_READ_ENABLED=false` |
 | `.env.gateway.local` | `SYNAPSE_GATEWAY_DATABASE_URL`, `SYNAPSE_GATEWAY_CA_FILE`, `SYNAPSE_AUTH_RATE_SECRET`, `SYNAPSE_SIGNUP_ENABLED=true`, optional `SYNAPSE_TRUST_PROXY`; limited TLS gateway only |
 | `.env.operator.local` | `SUPABASE_SECRET_KEY`, `DATABASE_URL`, optional `SUPABASE_DB_CA_FILE`; owner CLI only, never a web/worker environment |
 | `.env.workbench.local` | Generated `SYNAPSE_WORKBENCH_ENABLED`, `SYNAPSE_WORKBENCH_DATABASE_URL`, `SYNAPSE_WORKBENCH_ID`; separate loopback PostgreSQL |
 | `.env.translation.local` | `HF_TOKEN` for owner-authorized model preparation; generated `SYNAPSE_TRANSLATION_API_KEY`; optional `SYNAPSE_TRANSLATION_THREADS`, `SYNAPSE_TRANSLATION_TIMEOUT_SECONDS` |
-| `.env.integrations.local` | `SYNAPSE_INDIC_TRANSLATION_URL=http://127.0.0.1:8001`, generated `SYNAPSE_TRANSLATION_API_KEY`; optional existing Gemini/Gmail worker settings |
+| `.env.integrations.local` | `SYNAPSE_INDIC_TRANSLATION_URL=http://127.0.0.1:8001`, generated `SYNAPSE_TRANSLATION_API_KEY`; `SYNAPSE_GEMINI_EMBEDDINGS_API_KEY` for the dedicated Gemini key; separate Gmail OAuth worker settings |
 
 No password, token or credential value belongs in this guide, chat, client code or Git. Web startup rejects HF/model-service keys and operator credentials. Google translation is no longer selected and is never a fallback. Gemini semantic matching remains a separate optional provider.
 
@@ -40,12 +40,11 @@ Open **http://localhost:3000/login**. Keep `localhost` consistently; using `127.
 | `/login` | Real email/password login for officers and administrators |
 | `/signup` | Email, password, confirm password; no role/Bureau/admin selection |
 | `/pending-approval` | Current pending/rejected/suspended/revoked or restricted authority |
-| `/officer/dashboard` | Current account, session controls, Administration link and development workspace link |
-| `/officer-admin` | **Administration → User Approvals**; current authorized System Administrator only |
-| `/platform/dashboard` | Actual isolated PostgreSQL operational workspace; approved users only |
-| `/dashboard` | Existing labelled fictional Demo Mode; never used as live identity |
+| `/settings` | Current profile, secure password recovery and development configuration |
+| `/admin` | **Audit & Administration → User Approvals**; current authorized System Administrator only |
+| `/dashboard` | Original Overview with actual authorized isolated PostgreSQL records |
 
-The original hosted read preview stays gated. The `/platform/*` banner explicitly says isolated PostgreSQL, real Supabase Auth and hosted business writes OFF.
+The original hosted read preview stays gated. The original dashboard displays Development. All operational pages share the original navigation. Legacy `/platform/*` links redirect to their original-route equivalents.
 
 ## 4. Before deleting existing development Auth users — prepare recovery
 
@@ -96,10 +95,10 @@ For a brand-new authorized administrator with no prior internal identity, an own
 ## 7. Applicant → pending → administrator approval
 
 1. In a separate browser profile, open `/signup`. Enter an approved development email, a password of at least **12 characters**, and matching confirmation. Press **Sign Up**.
-2. Expect an immediate session and `/pending-approval`, with no Bureau, role or complaint access. Refresh the page and try `/officer/dashboard` and `/platform/dashboard` directly; server protection must retain the pending restriction. Protected APIs return 403. Duplicate signup is rejected and cannot replace an existing password/identity.
+2. Expect an immediate session and `/pending-approval`, with no Bureau, role or complaint access. Refresh the page and try `/officer/dashboard` and `/dashboard` directly; server protection must retain the pending restriction. Protected APIs return 403. Duplicate signup is rejected and cannot replace an existing password/identity.
 3. Sign in as the independently bootstrapped/current administrator through the **same `/login`** page. Choose **Administration → User Approvals**.
 4. Review applicant email, application signup/received date, status and audit history. Requested Bureau is not collected at public signup. Choose the correct active Bureau, allowed role, explicit assignment expiry and reason; submit **APPROVED**. Allowed portal roles are CASE_OFFICER, BUREAU_HEAD, AUDITOR and REVIEWER. SYSTEM_ADMIN is never offered here; self-approval is denied.
-5. Refresh/sign in as the officer. Current approval, scoped role and membership must resolve before `/officer/dashboard` or `/platform/dashboard` opens. Open the development workspace once so its scoped identity/reference cache is synchronized. Reports, cases and evidence remain authorized by the current server identity.
+5. Refresh/sign in as the officer. Current approval, scoped role and membership must resolve before `/officer/dashboard` or `/dashboard` opens. Open the development workspace once so its scoped identity/reference cache is synchronized. Reports, cases and evidence remain authorized by the current server identity.
 
 For two-Bureau checks, use separate approved officers with different memberships. One must not see the other's restricted descriptions, documents or operations. Newly recreated users have no automatically inherited cases. Create fictional development complaints in the isolated workspace and explicitly review discovery/access grants.
 
@@ -145,9 +144,9 @@ Preparation downloads only the pinned official code/configs, safetensors and Sen
 
 ## 10. Test actual Marathi/Hindi intake translation
 
-As an approved officer, open `/platform/intake`. Enter fictional Marathi or Hindi original text and select the source language. Save the draft and verify its institution. The durable worker calls the authenticated local IndicTrans2 API and persists original text, model output, official model/revision, detected/manual source language, target language and **NEEDS_REVIEW** state.
+As an approved officer, open `/intake`. Enter fictional Marathi or Hindi original text and select the source language. Save the draft and verify its institution. The durable worker calls the authenticated local IndicTrans2 API and persists original text, model output, official model/revision, detected/manual source language, target language and **NEEDS_REVIEW** state.
 
-Open `/platform/intelligence` → processing status for actual queued/blocked outcomes. If the language is uncertain/unsupported, select the correct manual source code in Intake and confirm it; this supersedes the old translation and queues a fresh version. Lingua provides real open-source identification but does not cover every Indic language reliably; manual selection remains available for all supported model languages/scripts.
+Open `/intelligence` → processing status for actual queued/blocked outcomes. If the language is uncertain/unsupported, select the correct manual source code in Intake and confirm it; this supersedes the old translation and queues a fresh version. Lingua provides real open-source identification but does not cover every Indic language reliably; manual selection remains available for all supported model languages/scripts.
 
 Read the translation next to the original, correct it, record a reason and confirm review. The machine output/provenance remains retained separately from the reviewed text; the original complaint is unchanged. Registration rejects an unreviewed current translation. Human review is mandatory for decisions. Nothing merges or approves a complaint automatically.
 
@@ -176,13 +175,13 @@ After any owner deletion/recreation, refresh local reference profiles with the s
 Record case numbers and source references privately. Use separate browser profiles for A/B/admin; logging out clears a shared profile across tabs.
 
 1. Follow the new password/approval tests above.
-2. **Institution registry.** As A, open `/platform/institutions`, create a development institution with an explicitly fictional Permanent ID such as `DEV-OWNER-001`. Duplicate normalized IDs must fail. The administrator can correct its name/state/region with a reason. Never create a false real AICTE institution record in hosted data.
-3. **Register a complaint.** Open `/platform/intake`. Save a unique manual source reference, original text/language, optional course/issue and your authorized Bureau. Select that draft, verify its institution, choose the configured category and yourself as officer, optionally opt into limited discovery, then register. No case exists before verification/registration. Review any pending duplicate/translation results first. A successful command must refresh the database snapshot, not just display a toast.
-4. **Dashboard consistency.** Refresh `/platform/dashboard`, `/platform/cases`, institution profile and `/platform/analytics`. The new case must appear and totals must reconcile with your authorized registry. Reload/restart the app to check persistence. Zero values are legitimate. Category/ageing/region counts derive from actual isolated records. Original `/dashboard` remains Demo and will not reflect this case.
-5. **Kanban and work.** Open `/platform/kanban`. Drag `NEW → ASSIGNED → UNDER_REVIEW`, enter a reason and commit; test the keyboard form too. Invalid jumps and stale versions must be rejected. Use the case detail page for assignment, priorities, tasks, task completion and accountable comments. Refresh other tabs to verify updates. `UNDER_REVIEW` is the deployed raw code, not an invented `IN_PROGRESS` case state.
+2. **Institution registry.** As A, open `/institutions`, create a development institution with an explicitly fictional Permanent ID such as `DEV-OWNER-001`. Duplicate normalized IDs must fail. The administrator can correct its name/state/region with a reason. Never create a false real AICTE institution record in hosted data.
+3. **Register a complaint.** Open `/intake`. Save a unique manual source reference, original text/language, optional course/issue and your authorized Bureau. Select that draft, verify its institution, choose the configured category and yourself as officer, optionally opt into limited discovery, then register. No case exists before verification/registration. Review any pending duplicate/translation results first. A successful command must refresh the database snapshot, not just display a toast.
+4. **Dashboard consistency.** Refresh `/dashboard`, `/complaints`, institution profile and `/analytics`. The new case must appear and totals must reconcile with your authorized registry. Reload/restart the app to check persistence. Zero values are legitimate. Category/ageing/region counts derive from actual isolated records. The original Overview now reads this same authorized PostgreSQL data.
+5. **Kanban and work.** Open `/kanban`. Drag `NEW → ASSIGNED → UNDER_REVIEW`, enter a reason and commit; test the keyboard form too. Invalid jumps and stale versions must be rejected. Use the case detail page for assignment, priorities, tasks, task completion and accountable comments. Refresh other tabs to verify updates. `UNDER_REVIEW` is the deployed raw code, not an invented `IN_PROGRESS` case state.
 6. **Attachments.** Upload a UTF-8 `.txt` development file; verify hash/size metadata, actual download bytes and a second version. Text policy explicitly says `NOT_REQUIRED`, not antivirus CLEAN. PDF/PNG/JPEG stay quarantined without configured real ClamAV; download/verification must fail while pending/infected. Configure an actual scanner and run the worker to rescan pending binaries. Bureau Head evidence review is required for disposal.
-7. **Cross-Bureau access.** In B's separate profile, verify A's private case/details/documents are absent. An explicitly discoverable case exposes only its ID/number/institution/category/Bureau. Request DETAILS with a reason and expiry within seven days. A's local Bureau Head independently approves in `/platform/coordination`; B may then read details but not documents. Request DOCUMENTS separately, test expiry and source-head revocation, and confirm visibility disappears after refresh. Ordinary officers cannot approve their own requests.
-8. **Relationships and graph.** Create a second authorized case. Propose/review typed relationships in its detail page, including dependencies; cycles must fail. `/platform/graph` and `/platform/dependencies` filter by text/Bureau/context type, navigate cases and show actual action nodes. Dashed institution context never proves the same issue. Record overlapping same-topic inspection or approval/rejection actions to produce explainable potential conflicts; a head must have access to both cases to review. Confirm linked-case update notifications only reach currently authorized recipients.
+7. **Cross-Bureau access.** In B's separate profile, verify A's private case/details/documents are absent. An explicitly discoverable case exposes only its ID/number/institution/category/Bureau. Request DETAILS with a reason and expiry within seven days. A's local Bureau Head independently approves in `/coordination`; B may then read details but not documents. Request DOCUMENTS separately, test expiry and source-head revocation, and confirm visibility disappears after refresh. Ordinary officers cannot approve their own requests.
+8. **Relationships and graph.** Create a second authorized case. Propose/review typed relationships in its detail page, including dependencies; cycles must fail. `/graph` and `/dependencies` filter by text/Bureau/context type, navigate cases and show actual action nodes. Dashed institution context never proves the same issue. Record overlapping same-topic inspection or approval/rejection actions to produce explainable potential conflicts; a head must have access to both cases to review. Confirm linked-case update notifications only reach currently authorized recipients.
 9. **Transfer.** A's local source head requests transfer to B's Bureau and its real authorized officer. B's independent local destination head reviews the minimal transfer in Coordination without prematurely receiving the case description. On completion B gains assignment, A loses ordinary ownership, the case history persists and original SLA timestamps remain unchanged. Source and destination cannot be the same approver.
 10. **SLA/calendar.** Administrator publishes a labelled **development-only** policy with explicit requirements and expiry. A local head sets an actual future deadline under that policy. Administrator enables its reminder schedule in Settings. The worker records reminder/overdue notifications idempotently; repeated ticks must not duplicate them. No statutory deadline is inferred. Schedule hearings/reviews/approvals/Bureau activities; Overview and full Calendar share their selector. Test previous/next month, Today, event-day selection and actual case links.
 11. **Resolution.** Complete/cancel outstanding work, verify accepted evidence, resolve findings/conflicts/dependencies and move to UNDER_REVIEW. Select a current policy and persist a fresh Quality Gate evaluation. A current Bureau Head may dispose only after required checks pass. Changed records invalidate evaluations. Disposed cases reject mutation; reopening is deliberately unavailable until a versioned review-cycle contract is approved.

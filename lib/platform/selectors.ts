@@ -39,7 +39,7 @@ export function registry(snapshot: Snapshot, query: { q?: string; status?: strin
   const { page = 1, pageSize = 20 } = query;
   if (!Number.isInteger(page) || page < 1 || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 50)
     throw new PlatformError(400, "invalid_query", "Use a page size between 1 and 50.");
-  const rows = snapshot.cases.filter((c) => (!query.status || c.status === query.status) && (!query.priority || c.priority === query.priority) &&
+  const rows = snapshot.cases.filter((c) => (!query.status || (query.status==='active'?c.status!=='DISPOSED':c.status === query.status)) && (!query.priority || c.priority === query.priority) &&
     (!query.q || (c.subject + " " + c.caseNumber).toLowerCase().includes(query.q.toLowerCase())))
     .sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt) || b.id.localeCompare(a.id));
   return { items: rows.slice((page - 1) * pageSize, page * pageSize), total: rows.length, page, pageSize };
@@ -51,8 +51,8 @@ export function platformCalendar(s: Snapshot) {
     ...s.sla.filter((r) => active.has(r.caseId) && ["RUNNING", "PAUSED", "BREACHED"].includes(r.status)).map((r) => ({ id: r.id, caseId: r.caseId, title: s.cases.find((c) => c.id === r.caseId)!.subject,
       at: r.dueAt, type: "SLA" as const })),
     ...s.tasks.filter((t) => t.dueAt && !["COMPLETED", "CANCELLED"].includes(t.status)).map((t) => ({ id: t.id, caseId: t.caseId, title: t.title, at: t.dueAt!, type: "TASK" as const })),
-    ...s.events,
-  ].map((e) => ({ ...e, day: calendarDayKey(e.at), href: `/platform/cases/${e.caseId}` })).sort((a, b) => Date.parse(a.at) - Date.parse(b.at) || a.id.localeCompare(b.id));
+    ...s.events.filter(e=>!e.cancelledAt),
+  ].map((e) => ({ ...e, day: calendarDayKey(e.at), href: `/complaints/${e.caseId}` })).sort((a, b) => Date.parse(a.at) - Date.parse(b.at) || a.id.localeCompare(b.id));
 }
 export function platformDashboard(s: Snapshot, now: string, period = 30) {
   if (![7, 30, 90].includes(period)) throw new PlatformError(400, "invalid_period", "Choose 7, 30 or 90 days.");

@@ -11,7 +11,7 @@ safeMain(async()=>{
  if(process.env.DATABASE_URL||process.env.SUPABASE_SECRET_KEY||process.env.SYNAPSE_SLA_DATABASE_URL)throw Error('OPERATOR_ENV_FORBIDDEN_IN_WORKER');
  const config=workbenchConfig();if(!config)throw Error('ISOLATED_WORKBENCH_REQUIRED');
  const pool=makeWorkbenchPool(config.connectionString),store=new WorkbenchStore(pool,config.environmentId),settings={developmentProcessingApproved:process.env.SYNAPSE_DEV_EXTERNAL_PROCESSING_APPROVED==='true',
-  gemini:process.env.SYNAPSE_GEMINI_API_KEY?new GeminiEmbeddings(process.env.SYNAPSE_GEMINI_API_KEY,process.env.SYNAPSE_GEMINI_EMBEDDING_MODEL||'gemini-embedding-001'):undefined,
+  gemini:process.env.SYNAPSE_GEMINI_EMBEDDINGS_API_KEY?new GeminiEmbeddings(process.env.SYNAPSE_GEMINI_EMBEDDINGS_API_KEY,process.env.SYNAPSE_GEMINI_EMBEDDING_MODEL||'gemini-embedding-001'):undefined,
   translation:process.env.SYNAPSE_INDIC_TRANSLATION_URL&&process.env.SYNAPSE_TRANSLATION_API_KEY?new IndicTrans2(process.env.SYNAPSE_INDIC_TRANSLATION_URL,process.env.SYNAPSE_TRANSLATION_API_KEY):undefined};
  let gmail,mailConfig;
  if(process.env.SYNAPSE_GMAIL_ENABLED==='true'){

@@ -1,2 +1,2 @@
-import { OfficerWorkspace } from "@/components/officer-workspace";
-export default function OfficerDashboard() { return <OfficerWorkspace />; }
+import {redirect} from 'next/navigation';
+export default function OfficerHome(){redirect('/dashboard');}

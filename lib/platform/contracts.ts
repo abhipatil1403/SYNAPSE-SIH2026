@@ -15,7 +15,7 @@ export const staffSchema = z.object({ id, authId: id, name: text, active: z.bool
   roles: z.array(z.object({ code: z.enum(liveRoles), bureauId: id.nullable(), from: at, until: at.nullable() }).strict()),
 }).strict();
 export const caseSchema = z.object({ id, caseNumber: version, institutionId: id, categoryId: id,
-  bureauId: id, officerId: id.nullable(), subject: text, summary: z.string().max(20000),
+  bureauId: id, officerId: id.nullable(), subject: text, summary: z.string().max(200000),
   status: z.enum(liveStatuses), priority: z.enum(livePriorities),
   receivedAt: at, updatedAt: at, disposedAt: at.nullable(), version, discoverable: z.boolean().optional(), source: z.enum(["MANUAL","EMAIL","API"]).optional(), sourceReference:z.string().max(4000).optional(),
 }).strict();
@@ -51,6 +51,7 @@ export const institutionSchema = z.object({ id, name: text, permanentId: z.strin
 export const actionSchema = z.object({ id, caseId: id, type: z.enum(["INSPECTION", "APPROVAL", "REJECTION", "REFERRAL"]), topic: text, from: at, until: at, reason: text, actorId: id }).strict();
 export const snapshotSchema = z.object({
   revision: version, generatedAt: at,
+  reportScope:z.string().regex(/^[a-f0-9]{64}$/).optional(),
   cases: z.array(caseSchema), drafts: z.array(draftSchema), tasks: z.array(taskSchema), evidence: z.array(evidenceSchema),
   matches: z.array(z.object({ id, draftId: id, caseId: id, explanation: text, algorithmVersion: text,
     decision: z.enum(["PENDING", "DISTINCT", "RELATED", "DUPLICATE"]), reviewerId: id.nullable(), reason: z.string(), similarity: z.number().min(-1).max(1).optional(), recommendation: z.enum(["DISTINCT","RELATED","DUPLICATE"]).optional(), sourceFingerprint: z.string().optional() }).strict()),
@@ -61,7 +62,7 @@ export const snapshotSchema = z.object({
   activity: z.array(z.object({ id, caseId: id.nullable(), actorId: id, type: text, reason: text, at }).strict()),
   sla: z.array(z.object({ id, caseId: id, taskId: id.nullable(), dueAt: at, originalDueAt: at,
     status: z.enum(["RUNNING", "PAUSED", "COMPLETED", "BREACHED"]), policyVersionId: id }).strict()),
-  events: z.array(z.object({ id, caseId: id, title: text, at, type: z.enum(["HEARING", "REVIEW", "APPROVAL", "BUREAU_ACTIVITY"]) }).strict()),
+  events: z.array(z.object({ id, caseId: id, title: text, at, type: z.enum(["HEARING", "REVIEW", "APPROVAL", "BUREAU_ACTIVITY"]), cancelledAt:at.optional(),cancelledBy:id.optional() }).strict()),
   notifications: z.array(z.object({ id, userId: id, caseId: id.nullable(), title: text, at, readAt: at.nullable() }).strict()),
   accessRequests: z.array(z.object({ id, caseId: id, requesterId: id, scope: scopeSchema, reason: text,
     until: at, status: z.enum(["PENDING", "APPROVED", "REJECTED"]), reviewerId: id.nullable() }).strict()),
@@ -79,6 +80,9 @@ export type PlatformCase = z.infer<typeof caseSchema>;
 export type Staff = z.infer<typeof staffSchema>;
 export type PlatformEvidence = z.infer<typeof evidenceSchema>;
 export const commandSchema = z.discriminatedUnion("type", [
+  z.object({type:z.literal('report.export'),expectedRevision:version,expectedScope:z.string().regex(/^[a-f0-9]{64}$/)}).strict(),
+  z.object({type:z.literal('event.reschedule'),caseId:id,expectedVersion:version,eventId:id,at,title:text,reason:text}).strict(),
+  z.object({type:z.literal('event.cancel'),caseId:id,expectedVersion:version,eventId:id,reason:text}).strict(),
   z.object({ type: z.literal("institution.create"), permanentId: z.string().min(3).max(40), name: text, region: z.string().max(100), state: z.string().max(100) }).strict(),
   z.object({ type: z.literal("institution.update"), institutionId: id, expectedVersion: version, name: text, region: z.string().max(100), state: z.string().max(100), reason: text }).strict(),
   z.object({ type: z.literal("category.create"), name: text }).strict(),

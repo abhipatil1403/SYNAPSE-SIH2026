@@ -29,7 +29,7 @@ export function PlatformKanban({ snapshot, busy, send }: { snapshot: Snapshot; b
 }
 function WorkflowCase({ c, busy, send }: { c: PlatformCase; busy: boolean; send: (command: Command, key: string) => Promise<boolean> }) {
   const [key, setKey] = useState(() => crypto.randomUUID());
-  return <article><Link href={`/platform/cases/${c.id}`}><strong>#{c.caseNumber} · {c.subject}</strong></Link><p>{c.priority} · Version {c.version}</p>{allowedTransitions[c.status]?.length > 0 && <form className="form-stack" onChange={() => setKey(crypto.randomUUID())} onSubmit={async (e) => {
+  return <article><Link href={`/complaints/${c.id}`}><strong>#{c.caseNumber} · {c.subject}</strong></Link><p>{c.priority} · Version {c.version}</p>{allowedTransitions[c.status]?.length > 0 && <form className="form-stack" onChange={() => setKey(crypto.randomUUID())} onSubmit={async (e) => {
     e.preventDefault(); const fields = new FormData(e.currentTarget); if (await send({ type: "case.transition", caseId: c.id, expectedVersion: c.version, status: String(fields.get("status")) as Exclude<PlatformCase["status"], "DISPOSED">, reason: String(fields.get("reason")) }, key)) setKey(crypto.randomUUID());
   }}><label>Next state<select name="status">{allowedTransitions[c.status].map((status) => <option key={status} value={status}>{liveStatusLabels[status as PlatformCase["status"]]}</option>)}</select></label><label>Transition reason<input name="reason" required maxLength={1000} /></label><button className="btn" disabled={busy}>Apply transition</button></form>}</article>;
 }

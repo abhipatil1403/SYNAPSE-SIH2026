@@ -1,2 +1,2 @@
-import { OfficerAdministration } from "@/components/officer-workspace";
-export default function OfficerAdmin() { return <OfficerAdministration />; }
+import {redirect} from 'next/navigation';
+export default function LegacyAdministration(){redirect('/admin');}

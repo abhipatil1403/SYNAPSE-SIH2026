@@ -2,8 +2,8 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { ArrowUpRight, Check, CircleAlert, Search, X } from "lucide-react";
 import Link from "next/link";
-import { humanize } from "@/lib/domain";
-import { officers } from "@/lib/seed";
+const humanize=(value:string)=>value.replaceAll("_"," ").toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
+
 import { APP_TIME_ZONE, calendarDayKey } from "@/lib/calendar";
 export function Button({
   children,
@@ -99,12 +99,11 @@ export function Avatar({
   name?: string;
   small?: boolean;
 }) {
-  const officer = officers.find((o) => o.id === id);
-  const label = officer?.name ?? name ?? "Unassigned";
+  const label = name ?? (id ? "Assigned officer" : "Unassigned");
   return (
     <span
       title={label}
-      className={`avatar ${officer?.color ?? "sage"} ${small ? "small" : ""}`}
+      className={`avatar ${"sage"} ${small ? "small" : ""}`}
     >
       {label
         .split(" ")

@@ -21,7 +21,7 @@ export function validatedClaims(token: string, verifiedUser: { id: string }, pro
     throw new Phase1Error(401, "authentication_required", "The verified session is unavailable.");
   return { sub: claims.sub, session_id: claims.session_id, exp: claims.exp, role: "authenticated", aud: "authenticated" };
 }
-export function accountDestination(account: OfficerAccount) { return account.status === "APPROVED" ? "/officer/dashboard" : "/pending-approval"; }
+export function accountDestination(account: OfficerAccount) { return account.status === "APPROVED" ? "/dashboard" : "/pending-approval"; }
 export function pkceFlowOptions(params: URLSearchParams) {
   const values = params.getAll("sb_flow_id");
   if (!values.length) return undefined; // Legacy single-flow callback.

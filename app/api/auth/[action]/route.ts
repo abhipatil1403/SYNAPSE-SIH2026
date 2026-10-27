@@ -18,8 +18,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   let ctx: ReturnType<typeof authContext> | undefined;
   try {
     ctx = authContext(request); const { action } = await params;
-    if (!["session", "approvals", "memberships", "roles", "cases", "readiness"].includes(action)) return ctx.respond({ error: { message: "Route unavailable." } }, 404);
+    if (!["session", "approvals", "memberships", "roles", "cases", "readiness", "profile"].includes(action)) return ctx.respond({ error: { message: "Route unavailable." } }, 404);
     const resolved = await ctx.account();
+    if (action === "profile") return ctx.respond({email:resolved.user.email,displayName:resolved.account.displayName??"",status:resolved.account.status,roles:resolved.account.roles,memberships:resolved.account.memberships});
     if (action === "readiness") return ctx.respond(await authReadiness());
     if (action === "memberships") return ctx.respond(await gateway("memberships", resolved.claims, "list"));
     if (action === "roles") return ctx.respond(roleAssignmentsSchema.parse(await gateway("roles", resolved.claims, "list")));
@@ -32,14 +33,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const listing = z.object({ requests: z.array(z.object({ auth_user_id: z.uuid(), email: z.email(), display_name: z.string(), status: z.string(), revision: z.string(), requested_at: z.string(),history:z.array(z.object({action:z.string(),at:z.string(),actorId:z.string().nullable(),detail:z.record(z.string(),z.unknown())})) })),
       bureaus: z.array(z.object({ id: z.uuid(), name: z.string() })) }).parse(await gateway("applicants", resolved.claims, "list"));
     return ctx.respond({ ...listing, requests: listing.requests.map((row) => ({ ...row, canDecide: row.auth_user_id !== resolved.claims.sub })) });
-  } catch (error) { return phase1Failure(error, ctx?.respond); }
+  } catch (error) { return phase1Failure(error instanceof Phase1Error?error:new Phase1Error(503,'account_service_unavailable','Secure account access is temporarily unavailable. Please retry.'), ctx?.respond); }
 }
 export async function POST(request: NextRequest, { params }: { params: Promise<{ action: string }> }) {
   let ctx: ReturnType<typeof authContext> | undefined;
   try {
     ctx = authContext(request); requireSameOrigin(request, ctx.config.appOrigin);
     const { action } = await params;
-    if (!["login", "signup", "forgot-password", "reset-password", "logout", "refresh", "approval", "membership", "role"].includes(action)) return ctx.respond({ error: { message: "Route unavailable." } }, 404);
+    if (!["login", "signup", "forgot-password", "reset-password", "logout", "refresh", "approval", "membership", "role", "profile"].includes(action)) return ctx.respond({ error: { message: "Route unavailable." } }, 404);
     if (action === "login") {
       const input = loginSchema.parse(await smallJson(request)); await throttle(request, "login", input.email);
       const { error } = await ctx.client.auth.signInWithPassword(input); providerFailure(error, true);
@@ -86,6 +87,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (error) { ctx.clear(); throw new Phase1Error(error.status === 429 ? 429 : error.status && error.status >= 500 ? 503 : 401, "session_refresh_failed", "Your session could not be refreshed. Sign in again."); }
       const resolved = await ctx.account(); return ctx.respond({ account: resolved.account, destination: accountDestination(resolved.account), liveEnabled: false });
     }
+    if (action === "profile") {
+      const input=z.object({name:z.string().trim().min(2).max(150)}).strict().parse(await smallJson(request)),identity=await ctx.account();
+      if(identity.account.status!=="APPROVED")throw new Phase1Error(403,"approval_required","Current approval is required to edit a profile.");
+      await throttle(request,"profile",identity.user.email);return ctx.respond(await gateway("profile",identity.claims,"update",input));
+    }
     if (action === "role") {
       const input = roleReviewSchema.parse(await smallJson(request)), identity = await ctx.verified();
       return ctx.respond(await gateway("roles", identity.claims, "decide", input));
@@ -100,6 +106,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }).strict().superRefine((input, ctx) => { if (input.decision === "APPROVED" && (!input.bureauId || !input.role || !input.until)) ctx.addIssue({ code: "custom", message: "Approval requires a Bureau, role and expiry." }); }).parse(await smallJson(request));
     const identity = await ctx.verified(); return ctx.respond(await gateway("account", identity.claims, "decide", input));
   } catch (error) {
-    return phase1Failure(error instanceof ZodError ? new Phase1Error(400, "invalid_input", "Check the form fields. New passwords need at least 12 characters.") : error, ctx?.respond);
+    return phase1Failure(error instanceof ZodError ? new Phase1Error(400, "invalid_input", "Check the form fields. New passwords need at least 12 characters.") : error instanceof Phase1Error?error:new Phase1Error(503,'account_service_unavailable','Secure account access is temporarily unavailable. Please retry.'), ctx?.respond);
   }
 }

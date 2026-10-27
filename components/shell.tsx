@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
+import {liveRoleLabels} from "@/lib/live/contracts";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Activity,
@@ -32,8 +33,8 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { roles } from "@/lib/types";
-import { useDemo } from "./provider";
+
+import { useOperational } from "./operational-provider";
 import { Avatar, Badge, Empty, Modal, date } from "./ui";
 
 export const navigation: {
@@ -46,9 +47,12 @@ export const navigation: {
       ["dashboard", "Overview", LayoutDashboard],
       ["intake", "Intake Queue", Inbox],
       ["complaints", "Complaints", FolderKanban],
+      ["institutions", "Institutions", BookOpen],
       ["tasks", "My Work", ListChecks],
       ["calendar", "Calendar", CalendarDays],
       ["analytics", "Analytics", ChartNoAxesCombined],
+      ["reports", "Reports", ChartNoAxesCombined],
+      ["notifications", "Notifications", Bell],
     ],
   },
   {
@@ -77,7 +81,7 @@ const subscribeMobile = (listener: () => void) => {
 };
 const mobileSnapshot = () => window.matchMedia("(max-width:1024px)").matches;
 export function Shell({ children }: { children: ReactNode }) {
-  const { state, actor, cases, tasks, findings, run, setRole } = useDemo();
+  const {snapshot,status,message,command,load,busy}=useOperational();
   const pathname = usePathname();
   const router = useRouter();
   const [search, setSearch] = useState(false);
@@ -85,6 +89,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const [drawer, setDrawer] = useState(false);
   const [notifications, setNotifications] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
+  const [sessionError,setSessionError]=useState('');
   const mobile = useSyncExternalStore(
     subscribeMobile,
     mobileSnapshot,
@@ -135,23 +140,14 @@ export function Shell({ children }: { children: ReactNode }) {
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, []);
-  const pending = tasks.filter((t) => t.status !== "Done").length;
-  const alerts = state.settings.deadlines
-    ? cases
-        .filter((c) => c.status !== "DISPOSED")
-        .sort((a, b) => a.dueAt.localeCompare(b.dueAt))
-        .slice(0, 3)
-    : [];
-  const unread = alerts.filter(
-    (c) => !state.readNotifications.includes(c.id),
-  ).length;
-  const results = cases
-    .filter((c) =>
-      `${c.id} ${c.subject} ${c.institution}`
-        .toLowerCase()
-        .includes(query.toLowerCase()),
-    )
-    .slice(0, 6);
+  const signOut=async()=>{setSessionError('');try{const r=await fetch('/api/auth/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});if(!r.ok){setSessionError('Sign-out could not be confirmed. Retry while connected.');return;}const c=new BroadcastChannel('synapse-auth-session');c.postMessage('signed-out');c.close();window.location.replace('/login');}catch{setSessionError('Sign-out could not be confirmed. Check your connection and retry.');}};
+  if(!snapshot?.me)return <main className="boot"><div className="brand-mark"><Network/></div><h1>SYNAPSE</h1><p role="status">{status==='error'?message:'Loading your authorized workspace…'}</p>{status==='error'&&<><button className="btn" onClick={()=>void load()}>Retry connection</button><Link href="/login">Sign in</Link><button className="btn" onClick={()=>void signOut()}>Sign out</button>{sessionError&&<p role="alert">{sessionError}</p>}</>}</main>;
+  const {cases,tasks,findings}=snapshot,me=snapshot.me;
+  const actor={name:me.name,role:me.roles.map(code=>liveRoleLabels[code as keyof typeof liveRoleLabels]??code).join(' · '),bureau:me.bureauIds.map(id=>snapshot.bureaus.find(b=>b.id===id)?.name??id).join(', ')};
+  const isAdmin=me.roles.includes('SYSTEM_ADMIN');
+  const pending=tasks.filter(t=>!['COMPLETED','CANCELLED'].includes(t.status)).length;
+  const alerts=[...snapshot.notifications].sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)).slice(0,8),unread=snapshot.notifications.filter(n=>!n.readAt).length;
+  const results=cases.filter(c=>(c.subject+' '+c.caseNumber+' '+(snapshot.institutions.find(i=>i.id===c.institutionId)?.name??'')).toLowerCase().includes(query.toLowerCase())).slice(0,6);
   function navigate(href: string) {
     router.push(href);
     setSearch(false);
@@ -210,7 +206,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 .filter(
                   (item) =>
                     item[0] !== "admin" ||
-                    ["Admin", "Supervisor", "Auditor"].includes(actor.role),
+                    isAdmin,
                 )
                 .map(([route, label, Icon]) => (
                   <Link
@@ -228,7 +224,7 @@ export function Shell({ children }: { children: ReactNode }) {
                       <span className="nav-count">{pending}</span>
                     )}
                     {route === "intelligence" &&
-                      findings.filter((f) => f.state === "Pending review")
+                      findings.filter((f) => f.status === "DETECTED")
                         .length > 0 && <span className="nav-dot" />}
                   </Link>
                 ))}
@@ -250,12 +246,12 @@ export function Shell({ children }: { children: ReactNode }) {
               meaningful resolution.
             </p>
             <Link href="/help" className="btn light">
-              Explore the demo <ArrowUpRight size={14} />
+              Workspace guide <ArrowUpRight size={14} />
             </Link>
           </div>
           <div className="sidebar-foot">
             <span className="status-dot" />
-            Fictional demonstration workspace
+            Authenticated development workspace
           </div>
         </div>
       </aside>
@@ -281,7 +277,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="topbar-actions">
             <span className="demo-pill">
               <span />
-              Demo Mode
+              Development
             </span>
             <button
               className="icon-btn notification-trigger"
@@ -319,15 +315,8 @@ export function Shell({ children }: { children: ReactNode }) {
                 <h2>Notifications</h2>
                 <button
                   className="text-btn"
-                  onClick={() =>
-                    run(
-                      {
-                        type: "read-notifications",
-                        ids: alerts.map((c) => c.id),
-                      },
-                      "Notifications marked as read",
-                    )
-                  }
+                  disabled={busy||!unread}
+                  onClick={async()=>{for(const item of snapshot.notifications.filter(n=>!n.readAt)){if(!await command({type:'notification.read',notificationId:item.id},crypto.randomUUID()))break;}}}
                 >
                   Mark all read
                 </button>
@@ -335,7 +324,7 @@ export function Shell({ children }: { children: ReactNode }) {
               {alerts.map((c) => (
                 <Link
                   key={c.id}
-                  href={`/complaints/${c.id}`}
+                  href={c.caseId?`/complaints/${c.caseId}`:"/notifications"}
                   onClick={() => setNotifications(false)}
                   className="notification-row"
                 >
@@ -343,10 +332,10 @@ export function Shell({ children }: { children: ReactNode }) {
                     <CalendarDays size={17} />
                   </span>
                   <div>
-                    <strong>{c.subject}</strong>
-                    <p>Example SLA · {date(c.dueAt)}</p>
+                    <strong>{c.title}</strong>
+                    <p>{date(c.at)}</p>
                   </div>
-                  {!state.readNotifications.includes(c.id) && (
+                  {!c.readAt && (
                     <span className="nav-dot" />
                   )}
                 </Link>
@@ -358,9 +347,10 @@ export function Shell({ children }: { children: ReactNode }) {
             <div className="top-popover user-popover">
               <strong>{actor.name}</strong>
               <p>
-                {actor.role} · {actor.bureau} Bureau
+                {actor.role} · {actor.bureau}
               </p>
-              <Badge tone="green">Simulated identity</Badge>
+              <Badge tone="green">Verified account</Badge><button className="menu-link" onClick={()=>void signOut()}>Sign out</button>
+              {sessionError&&<p role="alert">{sessionError}</p>}
               <Link
                 className="menu-link"
                 href="/settings"
@@ -375,7 +365,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 onClick={() => setUserMenu(false)}
               >
                 <BookOpen size={16} />
-                Demo guide
+                Workspace guide
               </Link>
             </div>
           )}
@@ -385,18 +375,8 @@ export function Shell({ children }: { children: ReactNode }) {
             Workspace <span className="breadcrumb-slash">/</span>{" "}
             <strong>{title}</strong>
           </span>
-          <label className="role-switch">
-            <span>Demo perspective</span>
-            <select
-              aria-label="Demo role"
-              value={actor.role}
-              onChange={(e) => setRole(e.target.value as typeof actor.role)}
-            >
-              {roles.map((role) => (
-                <option key={role}>{role}</option>
-              ))}
-            </select>
-          </label>
+          <span className="role-switch">{actor.role}</span>
+
         </div>
         <main id="main" className="main-workspace">
           {children}
@@ -405,7 +385,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <span>SYNAPSE · SIH 2026 prototype</span>
           <span>
             <Activity size={12} />
-            Local demo persistence · All records fictional
+            Persistent PostgreSQL · Hosted release disabled
           </span>
         </footer>
       </div>
@@ -437,7 +417,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 <span>
                   <strong>{c.subject}</strong>
                   <small>
-                    {c.id} · {c.institution}
+                    #{c.caseNumber} · {snapshot.institutions.find(i=>i.id===c.institutionId)?.name??c.institutionId}
                   </small>
                 </span>
                 <ArrowUpRight size={16} />
@@ -456,7 +436,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 ([route, label]) =>
                   label.toLowerCase().includes(query.toLowerCase()) &&
                   (route !== "admin" ||
-                    ["Admin", "Supervisor", "Auditor"].includes(actor.role)),
+                    isAdmin),
               )
               .slice(0, 5)
               .map(([route, label, Icon]) => (

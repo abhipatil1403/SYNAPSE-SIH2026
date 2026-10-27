@@ -4,6 +4,7 @@ import { resolveStaff, requireCase, role, current, canRead } from "./authorizati
 import { authorizedSnapshot } from "./selectors";
 import { allowedTransitions } from "./lifecycle";
 import { supplementalOperation, intakeAuthority, discoveryAllowed } from "./operations";
+import {reportScope} from './report-scope';
 
 export interface TransactionStore {
   // Implementations must serialize competing mutations and atomically persist state,
@@ -50,17 +51,21 @@ function cycle(s: State, source: string, target: string) {
 export class PlatformEngine {
   constructor(private store: TransactionStore, private clock = () => new Date().toISOString(), private uuid = randomUUID as () => string) {}
   async snapshot(principal: Principal) {
-    return this.store.transaction(async (s) => authorizedSnapshot(s, principalSchema.parse(principal), this.clock()));
+    return this.store.transaction(async (s) => {const snapshot=authorizedSnapshot(s, principalSchema.parse(principal), this.clock());return {...snapshot,reportScope:reportScope(snapshot)};});
   }
   async execute(principal: Principal, input: unknown): Promise<CommandResult> {
     const p = principalSchema.parse(principal), envelope = envelopeSchema.parse(input);
     return this.store.transaction(async (s) => {
       const now = this.clock(), user = resolveStaff(s, p), cmd = envelope.command;
+      if(cmd.type==='report.export')reject(cmd.expectedScope===reportScope(authorizedSnapshot(s,p,now)),'stale_report_scope','The report records or your authorization changed. Refresh before exporting.');
       const key = p.userId + ":" + envelope.idempotencyKey, serialized = JSON.stringify(cmd);
       // Replay must reauthorize visibility; it cannot return a revoked user's prior result.
       const prior = s.receipts[key];
       if (prior) {
         reject(prior.input === serialized, "idempotency_conflict", "The key was already used for another command.");
+        if('caseId' in cmd&&cmd.type!=='access.request')requireCase(s,user,cmd.caseId,now);
+        const draftId='draftId' in cmd?cmd.draftId:cmd.type==='draft.create'?prior.result.entityId:null;
+        if(draftId){const draft=s.drafts.find(d=>d.id===draftId);reject(draft&&intakeAuthority(user,draft.bureauId,now)&&(draft.creatorId===user.id||role(user,'BUREAU_HEAD',draft.bureauId,now)),'not_found','The authorized draft is unavailable.',404);}
         const entity = s.cases.find((c) => c.id === prior.result.entityId);
         if (entity) requireCase(s, user, entity.id, now);
         return prior.result;
@@ -102,6 +107,7 @@ export class PlatformEngine {
             draft.state = "ACCEPTED"; draft.linkedCaseId = changed.id;
           } else if (cmd.type === "draft.associate") {
             const c = requireCase(s, user, cmd.caseId, now, true); head(c);
+            reject(c.status!=='DISPOSED','disposed_read_only','Disposed cases are read-only until an authorized reopening workflow is approved.');
             reject(draft.verified && draft.institutionId === c.institutionId, "association_mismatch", "Verify the matching institution before association.");
             draft.state = "LINKED_TO_EXISTING"; draft.linkedCaseId = c.id; changed = c; entityId = c.id;
           } else if (cmd.type === "draft.reject") {
@@ -198,7 +204,9 @@ export class PlatformEngine {
             const policy = s.policies.find((x) => x.id === e.policyId);
             reject(policy?.approved && current(policy.from, policy.until, now), "policy_expired", "Closure policy is no longer approved/current.");
             reject(c.status === "UNDER_REVIEW", "invalid_disposal_state", "Disposal requires the approved resolution-review state mapping.");
-            c.status = "DISPOSED"; c.disposedAt = now; break;
+            c.status = "DISPOSED"; c.disposedAt = now;
+            for(const clock of s.sla.filter(clock=>clock.caseId===c.id&&['RUNNING','PAUSED','BREACHED'].includes(clock.status)))clock.status='COMPLETED';
+            break;
           }
         }
       }

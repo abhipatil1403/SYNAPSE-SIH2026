@@ -53,8 +53,10 @@ safeMain(async()=>{
   // Only approved identity/reference metadata is copied; no hosted complaints,
   // evidence, messages, tokens, passwords or privileged runtime credentials.
   stage='import_approved_metadata';hosted=await operatorContext();await hosted.db.query('BEGIN READ ONLY');
-  let identities=[];if(!process.argv.includes('--references-only')){const officers=await loadVault('.local/phase2/phase2-approved-officers.vault'),admin=await loadVault('.local/phase2/admin-onboarding.vault');identities=[...officers.accounts.map(a=>({authId:a.authUserId,internalId:a.internalUserId})),admin];}
-  if(process.argv.includes('--references-only'))identities=(await db.query('SELECT id,body FROM workbench.staff WHERE environment_id=$1',[plan.environmentId])).rows.map(r=>({internalId:r.id,authId:r.body.authId,fallback:r.body}));
+  // Refresh existing directory references without depending on passwords or
+  // pre-deletion Auth UUID vaults. Fresh/recreated users are imported only by
+  // the online trusted gateway when they sign in; no email-based inheritance.
+  const identities=(await db.query('SELECT id,body FROM workbench.staff WHERE environment_id=$1',[plan.environmentId])).rows.map(r=>({internalId:r.id,authId:r.body.authId,fallback:r.body}));
   for(const identity of identities){
    stage='read_approved_user_metadata';
    const user=(await hosted.db.query("SELECT u.user_id id,u.display_name name,(u.account_status='ACTIVE' AND l.auth_user_id IS NOT NULL) active,l.auth_user_id FROM synapse.users u LEFT JOIN synapse.auth_identity_links l ON l.internal_user_id=u.user_id AND l.revoked_at IS NULL WHERE u.user_id=$1",[identity.internalId])).rows[0];if(!user)throw Error('IMPORTED_APPLICATION_USER_MISSING');if(!identity.fallback&&(!user.active||user.auth_user_id!==identity.authId))throw Error('APPROVED_IDENTITY_INACTIVE');

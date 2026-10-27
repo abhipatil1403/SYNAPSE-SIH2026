@@ -9,6 +9,10 @@ export const normalizeInstitutionId = (value: string) => value.normalize("NFKC")
 
 /** Shared domain operations; persistence/identity are supplied by the repository. */
 export function supplementalOperation(s: State, u: Staff, cmd: Command, now: string, uuid: () => string): { entityId: string; changed?: PlatformCase } | undefined {
+  if(cmd.type==='report.export'){
+    ensure(s.revision===cmd.expectedRevision,'The report changed; refresh before exporting.');
+    return {entityId:uuid()};
+  }
   if (cmd.type === "institution.create") {
     ensure(configurationAdmin(u, now) || u.memberships.some((m) => intakeAuthority(u, m.bureauId, now)), "Current registry authority required.", 403);
     const permanentId = normalizeInstitutionId(cmd.permanentId);
@@ -44,7 +48,7 @@ export function supplementalOperation(s: State, u: Staff, cmd: Command, now: str
     ensure(destination&&role(destination,"CASE_OFFICER",t.toBureauId,now),"Destination officer authority changed.");
     if(cmd.decision==='COMPLETED'){c.bureauId=t.toBureauId;c.officerId=t.officerId;}t.status=cmd.decision;return {entityId:c.id,changed:c};
   }
-  if (!["sla.set", "event.schedule", "action.record", "conflict.review", "access.revoke", "evidence.attach", "evidence.review"].includes(cmd.type)) return;
+  if (!["sla.set", "event.schedule", "event.reschedule", "event.cancel", "action.record", "conflict.review", "access.revoke", "evidence.attach", "evidence.review"].includes(cmd.type)) return;
   ensure("caseId" in cmd && "expectedVersion" in cmd, "Versioned case operation required.", 400);
   const c = requireCase(s, u, cmd.caseId, now, true); ensure(c.version === cmd.expectedVersion, "Case changed; reload.");
   ensure(c.status!=="DISPOSED","Disposed cases are read-only until an authorized reopening workflow is approved.");
@@ -58,6 +62,11 @@ export function supplementalOperation(s: State, u: Staff, cmd: Command, now: str
     s.sla.push({ id, caseId: c.id, taskId: null, dueAt: cmd.dueAt, originalDueAt: prior?.originalDueAt ?? cmd.dueAt, status: "RUNNING", policyVersionId: cmd.policyId });
   } else if (cmd.type === "event.schedule") {
     s.events.push({ id, caseId: c.id, title: cmd.title, at: cmd.at, type: cmd.kind });
+  } else if(cmd.type==='event.reschedule'||cmd.type==='event.cancel'){
+    const event=s.events.find(e=>e.id===cmd.eventId&&e.caseId===c.id);ensure(event&&!event.cancelledAt,'Current scheduled event unavailable.',404);
+    s.activity.push({id:uuid(),caseId:c.id,actorId:u.id,type:'event.previous_schedule',reason:JSON.stringify({eventId:event.id,title:event.title,at:event.at,type:event.type}),at:now});
+    if(cmd.type==='event.cancel'){event.cancelledAt=now;event.cancelledBy=u.id;}
+    else Object.assign(event,{title:cmd.title,at:cmd.at});
   } else if (cmd.type === "access.revoke") {
     ensure(role(u, "BUREAU_HEAD", c.bureauId, now) && cmd.userId !== u.id, "Independent Bureau approval authority required.", 403);
     const grants = s.grants.filter((g) => g.caseId === c.id && g.userId === cmd.userId && g.scope === cmd.scope && !g.revoked); ensure(grants.length, "Current grant unavailable.", 404); for (const g of grants) g.revoked = true;

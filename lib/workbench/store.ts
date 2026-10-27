@@ -81,6 +81,9 @@ export class WorkbenchStore implements TransactionStore {
         sourceBlobs.push([id,this.environmentId,record.id,versionId,inspected.name,inspected.mediaType,inspected.sha256,bytes,inspected.scan,draft.creatorId]);
       }
     }
+    // Reject invalid generated domain state before any collection is persisted.
+    // The transaction rolls back rather than committing a row future reads reject.
+    snapshotSchema.parse(Object.fromEntries(Object.keys(snapshotSchema.shape).map(key=>[key,state[key as keyof State]])));
     for (const table of collections) {
       // Local delegated roles are not copied into the imported identity records.
       if (table === "staff") continue;

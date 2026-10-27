@@ -44,7 +44,17 @@ export async function processOneJob(store:WorkbenchStore,settings:WorkerSettings
     if(!d.institutionId)throw new IntegrationError('HUMAN_INSTITUTION_VERIFICATION_REQUIRED',false);
     const normalized=normalizeText(d.subject,true)+'\n'+normalizeText(d.body),fingerprint=hash(d.institutionId+'\n'+normalized);
     await c.query("INSERT INTO workbench.draft_indexes(draft_id,environment_id,institution_id,fingerprint,lexemes) VALUES($1,$2,$3,$4,to_tsvector('simple',$5)) ON CONFLICT(draft_id) DO UPDATE SET institution_id=excluded.institution_id,fingerprint=excluded.fingerprint,lexemes=excluded.lexemes,updated_at=now()",[d.id,store.environmentId,d.institutionId,fingerprint,normalized]);
-    const rows=(await c.query("SELECT i.draft_id,i.fingerprint FROM workbench.draft_indexes i WHERE i.environment_id=$1 AND i.institution_id=$2 AND i.draft_id<>$3 ORDER BY (i.fingerprint=$4) DESC,i.updated_at DESC LIMIT 49",[store.environmentId,d.institutionId,d.id,fingerprint])).rows;
+    // Exact fingerprints and indexed lexical overlap rank before a bounded
+    // recency fallback. This is hybrid shortlisting + actual cosine reranking,
+    // not a claim of an approximate-nearest-neighbour vector index.
+    const query=normalized.split(/\s+/).filter(Boolean).slice(0,32).join(' OR ');
+    const rows=(await c.query(`WITH shortlist AS (
+      (SELECT i.draft_id,i.fingerprint,0 tier,i.updated_at FROM workbench.draft_indexes i WHERE i.environment_id=$1 AND i.institution_id=$2 AND i.draft_id<>$3 AND i.fingerprint=$4 ORDER BY i.updated_at DESC LIMIT 49)
+      UNION ALL
+      (SELECT i.draft_id,i.fingerprint,1 tier,i.updated_at FROM workbench.draft_indexes i WHERE i.environment_id=$1 AND i.institution_id=$2 AND i.draft_id<>$3 AND i.lexemes @@ websearch_to_tsquery('simple',$5) ORDER BY ts_rank(i.lexemes,websearch_to_tsquery('simple',$5)) DESC,i.updated_at DESC LIMIT 49)
+      UNION ALL
+      (SELECT i.draft_id,i.fingerprint,2 tier,i.updated_at FROM workbench.draft_indexes i WHERE i.environment_id=$1 AND i.institution_id=$2 AND i.draft_id<>$3 ORDER BY i.updated_at DESC LIMIT 49)
+    ) SELECT draft_id,fingerprint FROM shortlist GROUP BY draft_id,fingerprint ORDER BY min(tier),max(updated_at) DESC LIMIT 49`,[store.environmentId,d.institutionId,d.id,fingerprint,query])).rows;
     const s=await store.intakeState(c,{draftId:d.id,actorId:job.actor_id,candidateIds:rows.map(r=>r.draft_id)});
     const candidates=rows.flatMap(row=>{const draft=s.drafts.find(x=>x.id===row.draft_id),record=s.cases.find(x=>x.id===draft?.linkedCaseId);return draft&&record&&canRead(s,u,record,new Date().toISOString())?[{draftId:draft.id,caseId:record.id,text:normalizeText(draft.subject,true)+'\n'+normalizeText(draft.body),fingerprint:row.fingerprint,caseVersion:record.version,features:`Category ${d.categoryHint&&d.categoryHint===record.categoryId?'matches':'not verified'}; course ${d.course&&draft.course&&normalizeText(d.course)===normalizeText(draft.course)?'matches':'not verified'}; issue ${d.issue&&draft.issue&&normalizeText(d.issue)===normalizeText(draft.issue)?'matches':'not verified'}; received-date distance ${Math.floor(Math.abs(Date.parse(d.receivedAt)-Date.parse(draft.receivedAt))/86400000)} days`}]:[];});
     const categories=(await c.query('SELECT id,body->>\'name\' name FROM workbench.categories WHERE environment_id=$1 ORDER BY id LIMIT 49',[store.environmentId])).rows as {id:string;name:string}[];
@@ -66,7 +76,7 @@ export async function processOneJob(store:WorkbenchStore,settings:WorkerSettings
       explanation:identical?'Same normalized institution/source content fingerprint. Human duplicate review required.':`Actual embedding cosine ${score.toFixed(4)}; institution matches; ${candidate.features}; supporting terms: ${lexicalSupport(source.normalized,candidate.text).join(', ')||'none'}. Development thresholds 0.90/0.75 are uncalibrated review aids, not confidence or an automatic decision.`,decision:'PENDING',reviewerId:null,reason:''});
     }
     advance(s);await store.save(c,before,s);
-    if(embeddings)await c.query('UPDATE workbench.draft_indexes SET embedding=$2,model_version=$3 WHERE draft_id=$1',[d.id,embeddings[0],settings.gemini!.version]);
+    const sourceEmbedding=embeddings?.[0]??categoryEmbeddings?.[0];if(sourceEmbedding)await c.query('UPDATE workbench.draft_indexes SET embedding=$2,model_version=$3 WHERE draft_id=$1 AND environment_id=$4',[d.id,sourceEmbedding,settings.gemini!.version,store.environmentId]);
    });if(semanticBlocked)throw new IntegrationError('APPROVED_GEMINI_CONFIGURATION_REQUIRED',false);
    result={provider:embeddings||categoryEmbeddings?'Google Gemini':null,modelVersion:embeddings||categoryEmbeddings?settings.gemini!.version:null,shortlistCount:source.candidates.length,shortlistLimit:49,exactCandidates:exact.length,semanticExecuted:!!embeddings,categorySuggestionsExecuted:!!categoryEmbeddings,humanReviewRequired:true};
   }

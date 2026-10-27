@@ -1,0 +1,37 @@
+{
+  "checkedAt": "2026-10-27T11:19:54.370Z",
+  "source": "Actual Supabase issued sessions, recreated owner-approved credentials; no mocked provider",
+  "results": [
+    {
+      "slot": 0,
+      "loginHttp": 200,
+      "status": "APPROVED",
+      "roles": [
+        "CASE_OFFICER"
+      ],
+      "snapshotHttp": 200,
+      "logoutHttp": 200
+    },
+    {
+      "slot": 1,
+      "loginHttp": 200,
+      "status": "APPROVED",
+      "roles": [
+        "CASE_OFFICER"
+      ],
+      "snapshotHttp": 200,
+      "logoutHttp": 200
+    },
+    {
+      "slot": 2,
+      "loginHttp": 200,
+      "status": "APPROVED",
+      "roles": [
+        "SYSTEM_ADMIN"
+      ],
+      "snapshotHttp": 200,
+      "logoutHttp": 200
+    }
+  ],
+  "invalidCredentialsHttp": 401
+}

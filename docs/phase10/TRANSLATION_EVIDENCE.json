@@ -1,0 +1,33 @@
+{
+  "checkedAt": "2026-10-27T09:57:31.315Z",
+  "source": "Actual pinned local IndicTrans2 inference and actual leased SQL queue/provenance test; approved fictional development source",
+  "inference": [
+    {
+      "source": "mr",
+      "target": "en",
+      "status": "PASS",
+      "modelId": "ai4bharat/indictrans2-indic-en-dist-200M",
+      "modelRevision": "d66a2122ad6d28184f3dc3797b652bd80ae3f65f",
+      "outputSha256": "32a4e7ff069bb08cf3b28455037896fdcb8d32acff218b3ef1069eaa2d6338b4"
+    },
+    {
+      "source": "hi",
+      "target": "en",
+      "status": "PASS",
+      "modelId": "ai4bharat/indictrans2-indic-en-dist-200M",
+      "modelRevision": "d66a2122ad6d28184f3dc3797b652bd80ae3f65f",
+      "outputSha256": "fe6aea1449a95db188d1432d6d0542b1a8b01938dd14a9bb38dc3e52661aa883"
+    },
+    {
+      "source": "en",
+      "target": "hi",
+      "status": "PASS",
+      "modelId": "ai4bharat/indictrans2-en-indic-dist-200M",
+      "modelRevision": "2cfd0a20057756d756bf3e53528f492afc52f91a",
+      "outputSha256": "af7eeec130a116573661119b43f8db714424b38a91ef45e3a783cb8f9dc6ff21"
+    }
+  ],
+  "actualProvider": true,
+  "databasePipeline": "PASS: actual SQL translation test exited successfully",
+  "qualityAcceptance": "AWAITING USER MANUAL TESTING"
+}

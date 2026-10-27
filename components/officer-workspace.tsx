@@ -28,7 +28,7 @@ export function OfficerWorkspace({ pending = false }: { pending?: boolean }) {
       const resolved = accountSchema.parse(result.account); setAccount(resolved);
       // Authorization changes must reach the server, not a prefetched route redirect.
       if (resolved.status === "PENDING_APPROVAL" && !pending) { setRows([]); window.location.replace("/pending-approval"); return; }
-      if (resolved.status === "APPROVED" && pending) { window.location.replace("/officer/dashboard"); return; }
+      if (resolved.status === "APPROVED" && pending) { window.location.replace("/dashboard"); return; }
       if (resolved.status === "APPROVED") {
         const cases = await fetch(`/api/auth/cases?page=${page}&pageSize=20`, { cache: "no-store", signal }), body = await cases.json();
         if (signal.aborted || version !== generation.current) return;
@@ -48,27 +48,19 @@ export function OfficerWorkspace({ pending = false }: { pending?: boolean }) {
     setBusy(true); setRows([]);
     active.current?.abort(); ++generation.current; if (action === "logout") ending.current = true;
     try { const result = await post(action); if (action === "logout") { const channel = new BroadcastChannel("synapse-officer-session"); channel.postMessage("signed-out"); channel.close(); setAccount(null); router.replace("/login"); router.refresh(); }
-      else { if (result.destination && ["/officer/dashboard", "/pending-approval"].includes(result.destination) && result.destination !== window.location.pathname) window.location.replace(result.destination); else await load(); }
+      else { if (result.destination && ["/dashboard", "/pending-approval"].includes(result.destination) && result.destination !== window.location.pathname) window.location.replace(result.destination); else await load(); }
     } catch (e) { setAccount(null); setMessage(e instanceof Error ? e.message : "Unable to complete session operation."); } finally { setBusy(false); }
   };
   const requiresApproval = account ? account.status === "PENDING_APPROVAL" : pending;
-  return <main className="officer-surface"><header><Link className="auth-brand" href="/officer/dashboard"><Network size={28} /><strong>SYNAPSE<span>Secure officer workspace</span></strong></Link><div><button className="btn" onClick={() => void run("refresh")} disabled={busy}>Refresh session</button><button className="btn" onClick={() => void run("logout")} disabled={busy}>Sign out</button></div></header>
+  return <main className="officer-surface"><header><Link className="auth-brand" href="/dashboard"><Network size={28} /><strong>SYNAPSE<span>Secure officer workspace</span></strong></Link><div><button className="btn" onClick={() => void run("refresh")} disabled={busy}>Refresh session</button><button className="btn" onClick={() => void run("logout")} disabled={busy}>Sign out</button></div></header>
     <section className="card"><p className="eyebrow"><ShieldCheck size={16} /> Verified Supabase identity</p><h1>{requiresApproval ? ({REJECTED:'Application rejected',REVOKED:'Access revoked',SUSPENDED:'Access suspended',APPROVED:'Access requires review',PENDING:'Pending officer approval'}[account?.application?.status??'PENDING']) : `Welcome${account?.displayName ? `, ${account.displayName}` : ""}`}</h1>
       {requiresApproval ? <p>Current application status: {account?.application?.status??'PENDING'}. Your account has no current complaint privileges. An authorized administrator must approve an active Bureau and role. Rejected, suspended, expired or revoked authority cannot access protected records.</p> : <p>{account?.roles.join(" · ") ?? "Verifying current roles…"} · {account?.memberships.length ?? 0} active Bureau memberships</p>}
       {message && <p className="auth-feedback" role="status">{message}</p>}
-      {account?.roles.includes("SYSTEM_ADMIN") && <Link className="btn" href="/officer-admin">Administration → User Approvals</Link>}
-      {account?.status==='APPROVED'&&<Link className="btn" href="/platform/dashboard">Open development workspace</Link>}
+      {account?.roles.includes("SYSTEM_ADMIN") && <Link className="btn" href="/admin">Administration → User Approvals</Link>}
+      {account?.status==='APPROVED'&&<Link className="btn" href="/dashboard">Open workspace</Link>}
     </section>
     {!requiresApproval && <section className="card"><h2>Authorized case registry</h2><p>Live workflows remain gated. Every available row is read from Supabase under your current Bureau permissions.</p><div className="platform-table"><table><thead><tr><th>Case</th><th>Institution</th><th>Status</th><th>Bureau</th></tr></thead><tbody>{rows.map((c) => <tr key={c.id}><td>#{c.caseNumber} · {c.subject}</td><td>{c.institution}</td><td>{c.statusCode}</td><td>{c.bureau}</td></tr>)}</tbody></table></div>{!rows.length && !message && <p>No authorized cases are available.</p>}<div className="card-head"><button className="btn" disabled={page === 1 || busy} onClick={() => setPage(page - 1)}>Previous</button><span>Page {page}</span><button className="btn" disabled={page * 20 >= total || busy} onClick={() => setPage(page + 1)}>Next</button></div></section>}
-    <OfficerReadiness /><Link href="/dashboard">Open isolated Demo Mode</Link></main>;
-}
-function OfficerReadiness() {
-  const [checks, setChecks] = useState<{ id: string; status: string; source: string }[]>([]), [message, setMessage] = useState(""), [busy, setBusy] = useState(false);
-  return <section className="card"><h2>Live readiness</h2><p>Current catalog checks and timestamped executed tests are separate from activation approval.</p><button className="btn" disabled={busy} onClick={async () => {
-    setBusy(true); setChecks([]); setMessage(""); try { const response = await fetch("/api/auth/readiness", { cache: "no-store" }), body = await response.json();
-      if (!response.ok || !Array.isArray(body.checks)) throw Error(body.error?.message ?? "Readiness checks are unavailable."); setChecks(body.checks);
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Readiness unavailable."); } finally { setBusy(false); }
-  }}>{busy ? "Checking hosted catalog…" : "Run current readiness checks"}</button>{message && <p role="alert">{message}</p>}{checks.map((c) => <p key={c.id}><strong>{c.status} · {c.id.replaceAll("_", " ")}</strong><br />{c.source}</p>)}</section>;
+    </main>;
 }
 type Approval = { auth_user_id: string; email: string; display_name: string; status: string; revision: string; canDecide: boolean; requested_at:string;history:{action:string;at:string;actorId:string|null;detail:Record<string,unknown>}[] };
 export function OfficerAdministration() {
@@ -86,7 +78,7 @@ export function OfficerAdministration() {
         if (!response.ok) throw Error("Current administrator authority could not be verified.");
         const account = accountSchema.parse(body.account);
         if (account.status !== "APPROVED" || !account.roles.includes("SYSTEM_ADMIN")) {
-          setAccess("unavailable"); router.replace(account.status === "APPROVED" ? "/officer/dashboard" : "/pending-approval"); router.refresh(); return;
+          setAccess("unavailable"); router.replace(account.status === "APPROVED" ? "/dashboard" : "/pending-approval"); router.refresh(); return;
         }
         setAccess("approved"); setMessage("");
       } catch { if (!stopped && !signal.aborted && current === generation) { setAccess("unavailable"); setMessage("Administrator access is unavailable. Private account records have been cleared."); } }
@@ -102,19 +94,20 @@ export function OfficerAdministration() {
   }, [router]);
   // Unmount every resource/form on denial. Late resource responses belong to
   // discarded component instances and cannot restore private records.
-  return access === "approved" ? <OfficerAdministrationContent /> : <main className="officer-surface"><h1>Administrator access</h1><p role="status">{message || "Verifying current administrator authority…"}</p><Link href="/officer/dashboard">Return to officer workspace</Link></main>;
+  return access === "approved" ? <OfficerAdministrationContent /> : <main className="officer-surface"><h1>Administrator access</h1><p role="status">{message || "Verifying current administrator authority…"}</p><Link href="/dashboard">Return to officer workspace</Link></main>;
 }
 function OfficerAdministrationContent() {
+  const [decisions,setDecisions]=useState<Record<string,string>>({});
   const [items, setItems] = useState<Approval[]>([]), [bureaus, setBureaus] = useState<{ id: string; name: string }[]>([]), [message, setMessage] = useState(""), [busy, setBusy] = useState(false);
   const load = useCallback(async () => { const response = await fetch("/api/auth/approvals", { cache: "no-store" }); const body = await response.json(); if (!response.ok) { setItems([]); throw Error(body.error?.message ?? "Approval access unavailable."); } setItems(body.requests); setBureaus(body.bureaus); }, []);
   useEffect(() => { let disposed = false; queueMicrotask(() => { if (!disposed) void load().catch((e) => { if (!disposed) setMessage(e.message); }); }); return () => { disposed = true; }; }, [load]);
-  return <main className="officer-surface"><Link href="/officer/dashboard">← Officer workspace</Link><h1>User Approvals</h1><p>Independent global System Administrator authority is checked for every decision. No administrator is created automatically.</p>{message && <p role="status">{message}</p>}{items.map((item) => <section className="card" key={item.auth_user_id}><h2>{item.display_name}</h2><p>{item.email} · {item.status}</p><p>Application signup received: {new Date(item.requested_at).toLocaleString('en-IN')}</p><details><summary>Review history</summary>{item.history?.map((h,i)=><p key={i}>{h.action} · {new Date(h.at).toLocaleString('en-IN')} · {String(h.detail.reason??'Audited owner action')}</p>)}{!item.history?.length&&<p>No decisions recorded.</p>}</details><form className="form-stack" onSubmit={async (e) => {
+  return <div className="user-approvals"><h2>User Approvals</h2><p>Independent global System Administrator authority is checked for every decision. No administrator is created automatically.</p>{message && <p role="status">{message}</p>}{items.map((item) => <section className="card" key={item.auth_user_id}><h2>{item.display_name}</h2><p>{item.email} · {item.status}</p><p>Application signup received: {new Date(item.requested_at).toLocaleString('en-IN')}</p><details><summary>Review history</summary>{item.history?.map((h,i)=><p key={i}>{h.action} · {new Date(h.at).toLocaleString('en-IN')} · {String(h.detail.reason??'Audited owner action')}</p>)}{!item.history?.length&&<p>No decisions recorded.</p>}</details><form className="form-stack" onSubmit={async (e) => {
       e.preventDefault(); const fields = new FormData(e.currentTarget); setBusy(true); try {
         const decision = String(fields.get("decision")); const until = decision === "APPROVED" ? approvalExpiry(String(fields.get("until") ?? "")) : undefined; await post("approval", { authId: item.auth_user_id, revision: item.revision, decision, reason: String(fields.get("reason")),
           ...(decision === "APPROVED" ? { bureauId: String(fields.get("bureau")), role: String(fields.get("role")), until } : {}) });
         await load(); setMessage("The account decision was committed and audited.");
       } catch (error) { setMessage(error instanceof Error ? error.message : "Approval failed."); } finally { setBusy(false); }
-    }}><label>Decision<select name="decision">{(item.status === "PENDING" ? ["APPROVED", "REJECTED"] : ["SUSPENDED", "REVOKED"]).map((d) => <option key={d}>{d}</option>)}</select></label><label>Bureau<select name="bureau">{bureaus.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label><label>Role<select name="role">{["CASE_OFFICER", "BUREAU_HEAD", "AUDITOR", "REVIEWER"].map((r) => <option key={r}>{r}</option>)}</select></label><label>Assignment expiry (1 hour to 90 days ahead)<input type="datetime-local" name="until" /></label><label>Decision reason<textarea name="reason" required minLength={5} maxLength={1000} /></label>{!item.canDecide && <p>Changes to your own account require independent administrator approval.</p>}<button className="btn primary" disabled={busy || !item.canDecide}>Commit reviewed decision</button></form></section>)}{!items.length && <p>No reviewable requests loaded.</p>}<MembershipAdministration /><RoleAdministration /></main>;
+    }}><label>Decision<select name="decision" aria-label="Decision" onChange={e=>setDecisions(old=>({...old,[item.auth_user_id]:e.target.value}))}>{(item.status === "PENDING" ? ["APPROVED", "REJECTED"] : ["SUSPENDED", "REVOKED"]).map((d) => <option key={d}>{d}</option>)}</select></label>{item.status==='PENDING'&&(decisions[item.auth_user_id]??'APPROVED')==='APPROVED'&&<><label>Bureau<select name="bureau" aria-label="Bureau" defaultValue="" required><option value="" disabled>Select the approved Bureau</option>{bureaus.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label><label>Role<select name="role" aria-label="Role" defaultValue="" required><option value="" disabled>Select the approved role</option>{["CASE_OFFICER", "BUREAU_HEAD", "AUDITOR", "REVIEWER"].map((r) => <option key={r}>{r}</option>)}</select></label><label>Assignment expiry (1 hour to 90 days ahead)<input type="datetime-local" name="until" required/></label></>}<label>Decision reason<textarea name="reason" required minLength={5} maxLength={1000} /></label>{!item.canDecide && <p>Changes to your own account require independent administrator approval.</p>}<button className="btn primary" disabled={busy || !item.canDecide}>Commit reviewed decision</button></form></section>)}{!items.length && <p>No reviewable requests loaded.</p>}<MembershipAdministration /><RoleAdministration /></div>;
 }
 type Membership = { id: string; userId: string; email: string; bureau: string; bureauId: string; validFrom: string; validUntil: string | null; canManage: boolean };
 function MembershipAdministration() {

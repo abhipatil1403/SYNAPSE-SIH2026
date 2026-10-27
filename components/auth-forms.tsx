@@ -23,7 +23,7 @@ export function AuthForm({ kind, callbackError = false, callbackNotice }: { kind
         const response = await fetch(`/api/auth/${kind}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), cache: "no-store" });
         const body = await response.json(); setError(!response.ok);
         if (!response.ok) setMessage(body.error?.message ?? "The secure service is unavailable. Try again.");
-        else if (body.destination) window.location.assign(body.destination);
+        else if (body.destination) {const channel=new BroadcastChannel('synapse-auth-session');channel.postMessage('identity-changed');channel.close();window.location.assign(body.destination);}
         else { setMessage(body.message ?? "Request accepted."); form.reset(); }
       } catch { setError(true); setMessage("Unable to reach the secure service. Try again."); }
       finally { setBusy(false); }
@@ -34,5 +34,5 @@ export function AuthForm({ kind, callbackError = false, callbackNotice }: { kind
       {message && <p className={error ? "auth-feedback error" : "auth-feedback"} role={error ? "alert" : "status"}>{message}</p>}
       <button className="btn primary" disabled={busy}>{busy ? "Contacting secure service…" : submit}<ArrowRight size={17} /></button>
     </form><nav className="auth-links" aria-label="Account assistance">{kind === "login" ? <><Link href="/forgot-password">Forgot Password</Link><Link href="/signup">Create Account</Link></> : <Link href="/login">Back to sign in</Link>}</nav>
-    <p className="auth-note">An email account does not grant complaint access. Bureau roles require independent approval.</p></section><Link className="auth-demo" href="/dashboard">Open labelled Demo Mode</Link></main>;
+    <p className="auth-note">An email account does not grant complaint access. Bureau roles require independent approval.</p></section></main>;
 }
