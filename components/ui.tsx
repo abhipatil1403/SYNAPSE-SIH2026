@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useRef, type ReactNode } from "react";
-import { ArrowUpRight, Check, CircleAlert, Search, X } from "lucide-react";
+import { useEffect, useRef, useId, type ReactNode } from "react";
+import { ArrowUpRight, Check, CircleAlert, Search, X } from "./symbols";
 import Link from "next/link";
 const humanize=(value:string)=>value.replaceAll("_"," ").toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
 
@@ -185,31 +185,31 @@ export function Modal({
   onClose: () => void;
   wide?: boolean;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
+  const ref = useRef<HTMLDialogElement>(null),titleId=useId();
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const dialog = ref.current;
     dialog?.showModal();
     return () => {
       dialog?.close();
-      previous?.focus();
+      if(previous?.isConnected)previous.focus();
     };
   }, []);
   return (
     <dialog
       ref={ref}
       className={wide ? "wide" : ""}
-      aria-labelledby="dialog-title"
+      aria-labelledby={titleId}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
       }}
       onClick={(e) => {
-        if (e.target === ref.current) onClose();
+        if(e.target===ref.current){const box=e.currentTarget.getBoundingClientRect();if(e.clientX<box.left||e.clientX>box.right||e.clientY<box.top||e.clientY>box.bottom)onClose();}
       }}
     >
       <div className="dialog-head">
-        <h2 id="dialog-title">{title}</h2>
+        <h2 id={titleId}>{title}</h2>
         <button
           className="icon-btn"
           aria-label="Close dialog"

@@ -6,7 +6,7 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
+} from "./symbols";
 import {
   addCalendarDays,
   calendarDayKey,

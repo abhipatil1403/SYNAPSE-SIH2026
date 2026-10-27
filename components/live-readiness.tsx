@@ -1,4 +1,5 @@
 "use client";
+import {Spinner,Feedback} from "./feedback";
 import { useState } from "react";
 import { readinessCheckSchema } from "@/lib/live/readiness";
 export function LiveReadiness() {
@@ -31,9 +32,9 @@ export function LiveReadiness() {
         evidence blocks activation.
       </p>
       <button className="btn" onClick={check} disabled={busy}>
-        {busy ? "Checking…" : "Run readiness checks"}
+        {busy&&<Spinner/>}{busy ? "Checking…" : "Run readiness checks"}
       </button>
-      {error && <p role="alert">{error}</p>}
+      <Feedback message={error}/>
       {checks && (
         <ul>
           {checks.map((c) => (

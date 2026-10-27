@@ -10,7 +10,7 @@ import {
   FileCheck2,
   Network,
   Sparkles,
-} from "lucide-react";
+} from "./symbols";
 
 
 import type {DashboardPeriod} from "@/lib/dashboard";

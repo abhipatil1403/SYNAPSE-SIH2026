@@ -3,10 +3,10 @@ import { test, expect } from "@playwright/test";
 const origin=process.env.SYNAPSE_TEST_ORIGIN??"http://localhost:3000";
 
 test("officer auth forms have no browser-selected identity and usable at desktop/mobile widths", async ({ page }) => {
-  for (const [path, title] of [["login", "Welcome back"], ["signup", "Officer registration"], ["forgot-password", "Reset your password"], ["reset-password", "Choose a new password"]]) {
+  for (const [path, title] of [["login", "Welcome back"], ["signup", "Make it official."], ["forgot-password", "A fresh start."], ["reset-password", "A stronger password."]]) {
     await page.goto("/" + path); await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible();
     await expect(page.getByRole("combobox", { name: "Demo role" })).toHaveCount(0);
-    await expect(page.getByText("An email account does not grant complaint access.", { exact: false })).toBeVisible();
+    await expect(page.getByText("Account registration and complaint access are reviewed separately.", { exact: false })).toBeVisible();
     for (const width of [1440, 768, 390]) { await page.setViewportSize({ width, height: 1000 }); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true); }
   }
 });
@@ -33,7 +33,7 @@ test("real unauthenticated routes, CSRF, malformed identity and recovery replay 
 test("client reset confirmation validates locally; provider errors are displayed without false success", async ({ page }) => {
   await page.goto("/reset-password");
   await page.getByLabel("Password", { exact: true }).fill("local-password-one"); await page.getByLabel("Confirm password", { exact: true }).fill("local-password-two");
-  await page.getByRole("button", { name: "Update password" }).click(); await expect(page.locator(".auth-card").getByRole("alert")).toHaveText("The passwords do not match.");
+  await page.getByRole("button", { name: "Update password" }).click(); await expect(page.locator(".toast-stack").getByRole("alert").last()).toHaveText("The passwords do not match.");
   await page.getByLabel("Confirm password", { exact: true }).fill("local-password-one"); await page.getByRole("button", { name: "Update password" }).click();
-  await expect(page.locator(".auth-card").getByRole("alert")).toContainText("Sign in with your email and password.");
+  await expect(page.locator(".toast-stack").getByRole("alert").last()).toContainText("Sign in with your email and password.");
 });

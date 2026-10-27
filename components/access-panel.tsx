@@ -1,6 +1,7 @@
 "use client";
+import {ActionForm} from "./feedback";
 import { useState, type FormEvent } from "react";
-import { ArrowUpRight, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, ShieldCheck } from "./symbols";
 import Link from "next/link";
 import { canDiscover, canView } from "@/lib/domain";
 import type { AccessScope } from "@/lib/types";
@@ -152,7 +153,7 @@ export function AccessPanel() {
             setDecision(null);
           }}
         >
-          <form className="form-stack" onSubmit={submit}>
+          <ActionForm className="form-stack" onSubmit={submit}>
             {request && (
               <>
                 <label>
@@ -193,7 +194,7 @@ export function AccessPanel() {
                 {request ? "Submit Request" : "Record Decision"}
               </Button>
             </div>
-          </form>
+          </ActionForm>
         </Modal>
       )}
     </Card>

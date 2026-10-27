@@ -1,6 +1,7 @@
 "use client";
+import {ActionForm} from "./feedback";
 import { useState, type FormEvent } from "react";
-import { Plus } from "lucide-react";
+import { Plus } from "./symbols";
 import { bureaus, officers } from "@/lib/seed";
 import { canApprove, canEdit } from "@/lib/domain";
 import { linkTypes, type Case } from "@/lib/types";
@@ -52,7 +53,7 @@ export function CreateCaseButton() {
             Create a fictional case with a human-confirmed lead Bureau. Example
             SLA: 14 calendar days.
           </p>
-          <form onSubmit={submit} className="form-stack">
+          <ActionForm onSubmit={submit} className="form-stack">
             <label>
               Subject
               <input
@@ -110,7 +111,7 @@ export function CreateCaseButton() {
                 Register complaint
               </Button>
             </div>
-          </form>
+          </ActionForm>
         </Modal>
       )}
     </>
@@ -157,7 +158,7 @@ export function NewTaskButton({ caseId }: { caseId?: string }) {
       </Button>
       {open && (
         <Modal title="New work item" onClose={() => setOpen(false)}>
-          <form onSubmit={submit} className="form-stack">
+          <ActionForm onSubmit={submit} className="form-stack">
             <label>
               Case
               <select
@@ -205,7 +206,7 @@ export function NewTaskButton({ caseId }: { caseId?: string }) {
                 Create work item
               </Button>
             </div>
-          </form>
+          </ActionForm>
         </Modal>
       )}
     </>
@@ -247,7 +248,7 @@ export function LinkCaseButton() {
           title="Confirm a case relationship"
           onClose={() => setOpen(false)}
         >
-          <form onSubmit={submit} className="form-stack">
+          <ActionForm onSubmit={submit} className="form-stack">
             <p className="muted">
               A relationship preserves both cases. Directed dependencies cannot
               form a cycle.
@@ -286,7 +287,7 @@ export function LinkCaseButton() {
                 Confirm relationship
               </Button>
             </div>
-          </form>
+          </ActionForm>
         </Modal>
       )}
     </>

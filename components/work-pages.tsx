@@ -1,4 +1,5 @@
 "use client";
+import {ActionForm} from "./feedback";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -13,7 +14,7 @@ import {
   GripVertical,
   Languages,
   Search,
-} from "lucide-react";
+} from "./symbols";
 import { canEdit, taskStatuses } from "@/lib/domain";
 import { officers } from "@/lib/seed";
 import {
@@ -718,7 +719,7 @@ export function Intake() {
                 download is implied.
               </p>
             </div>
-            <form
+            <ActionForm
               key={draft.id}
               className="extraction-row"
               onSubmit={(e) => {
@@ -749,7 +750,7 @@ export function Intake() {
                 <Check size={14} />
                 Verify
               </Button>
-            </form>
+            </ActionForm>
             <div className="finding-sources">
               <strong>SIMULATED RELATED-CASE RECOMMENDATION</strong>
               <p>
@@ -826,7 +827,7 @@ export function Intake() {
           title={`${decision} submission`}
           onClose={() => setDecision(null)}
         >
-          <form onSubmit={decide} className="form-stack">
+          <ActionForm onSubmit={decide} className="form-stack">
             <p className="muted">
               This records a human decision on {draft.id}. Repeated registration
               will not create another case.
@@ -856,7 +857,7 @@ export function Intake() {
                 Confirm {decision.toLowerCase()}
               </Button>
             </div>
-          </form>
+          </ActionForm>
         </Modal>
       )}
     </>

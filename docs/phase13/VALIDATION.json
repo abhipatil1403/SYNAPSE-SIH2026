@@ -1,0 +1,22 @@
+{
+  "checkedAt": "2026-10-27T15:40:19.836623+00:00",
+  "scope": "Source/unit/static/production-build validation only. Human visual and live-account acceptance remains pending.",
+  "unitTests": {
+    "command": "npm test",
+    "passed": 127,
+    "failed": 0
+  },
+  "typecheck": "PASS",
+  "lint": "PASS",
+  "productionBuild": "PASS",
+  "diffWhitespaceCheck": "PASS",
+  "browserTests": "NOT RUN: owner requested manual verification",
+  "realAccountHttpTests": "NOT RUN for this release",
+  "mailboxInteractions": "NOT RUN",
+  "hostedAuthorizationTests": "NOT RUN for this release",
+  "databaseSchemaOrGrantsChanged": false,
+  "hostedBusinessWritesEnabled": false,
+  "readPreviewActivationChanged": false,
+  "manualAcceptance": "AWAITING USER MANUAL TESTING",
+  "ciAndDeployment": "Reported for the exact pushed commit in PR #1; this file records local executed checks"
+}

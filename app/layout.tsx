@@ -6,6 +6,8 @@ import "./overview.css";
 import "./live-preview.css";
 import "./platform.css";
 import "./auth.css";
+import "./landing.css";
+import "./experience.css";
 import { AppFrame } from "@/components/app-frame";
 export const metadata: Metadata = {
   title: "SYNAPSE · Coordinated resolution",

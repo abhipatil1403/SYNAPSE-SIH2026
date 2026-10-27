@@ -1,6 +1,9 @@
 "use client";
+import {Spinner,Feedback} from "./feedback";
 import {
   useEffect,
+  useRef,
+  useTransition,
   useState,
   useSyncExternalStore,
   type ReactNode,
@@ -31,15 +34,17 @@ import {
   ShieldCheck,
   Sparkles,
   Users,
-  type LucideIcon,
-} from "lucide-react";
+  type UiSymbol,
+} from "./symbols";
 
 import { useOperational } from "./operational-provider";
 import { Avatar, Badge, Empty, Modal, date } from "./ui";
 
+import {useDismissLayer} from "./use-dismiss-layer";
+
 export const navigation: {
   group: string;
-  items: [string, string, LucideIcon][];
+  items: [string, string, UiSymbol][];
 }[] = [
   {
     group: "WORKSPACE",
@@ -81,15 +86,22 @@ const subscribeMobile = (listener: () => void) => {
 };
 const mobileSnapshot = () => window.matchMedia("(max-width:1024px)").matches;
 export function Shell({ children }: { children: ReactNode }) {
-  const {snapshot,status,message,command,load,busy}=useOperational();
+  const {snapshot,status,message,command,load,busy,refreshing}=useOperational();
   const pathname = usePathname();
+  const workspacePath=pathname.replace(/^\/platform(?=\/|$)/,'').replace(/^\/cases(?=\/|$)/,'/complaints')||'/dashboard';
   const router = useRouter();
+  const [navigating,startNavigation]=useTransition();
+  const notificationPanel=useRef<HTMLDivElement|null>(null),notificationTrigger=useRef<HTMLButtonElement|null>(null),profilePanel=useRef<HTMLDivElement|null>(null),profileTrigger=useRef<HTMLButtonElement|null>(null);
+  const [signingOut,setSigningOut]=useState(false),signOutLock=useRef(false);
   const [search, setSearch] = useState(false);
   const [query, setQuery] = useState("");
   const [drawer, setDrawer] = useState(false);
   const [notifications, setNotifications] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
   const [sessionError,setSessionError]=useState('');
+  useDismissLayer(notifications,notificationPanel,notificationTrigger,()=>setNotifications(false));
+  useDismissLayer(userMenu,profilePanel,profileTrigger,()=>setUserMenu(false));
+  useEffect(()=>{queueMicrotask(()=>{setUserMenu(false);setNotifications(false);setDrawer(false);});},[pathname]);
   const mobile = useSyncExternalStore(
     subscribeMobile,
     mobileSnapshot,
@@ -124,7 +136,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const title =
     navigation
       .flatMap((g) => g.items)
-      .find((i) => pathname.startsWith(`/${i[0]}`))?.[1] ?? "Workspace";
+      .find((i) => workspacePath.startsWith(`/${i[0]}`))?.[1] ?? "Workspace";
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
@@ -140,8 +152,8 @@ export function Shell({ children }: { children: ReactNode }) {
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, []);
-  const signOut=async()=>{setSessionError('');try{const r=await fetch('/api/auth/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});if(!r.ok){setSessionError('Sign-out could not be confirmed. Retry while connected.');return;}const c=new BroadcastChannel('synapse-auth-session');c.postMessage('signed-out');c.close();window.location.replace('/login');}catch{setSessionError('Sign-out could not be confirmed. Check your connection and retry.');}};
-  if(!snapshot?.me)return <main className="boot"><div className="brand-mark"><Network/></div><h1>SYNAPSE</h1><p role="status">{status==='error'?message:'Loading your authorized workspace…'}</p>{status==='error'&&<><button className="btn" onClick={()=>void load()}>Retry connection</button><Link prefetch={false} href="/login">Sign in</Link><button className="btn" onClick={()=>void signOut()}>Sign out</button>{sessionError&&<p role="alert">{sessionError}</p>}</>}</main>;
+  const signOut=async()=>{if(signOutLock.current)return;signOutLock.current=true;setSigningOut(true);setSessionError('');let leaving=false;try{const r=await fetch('/api/auth/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});if(!r.ok){setSessionError('Sign-out could not be confirmed. Retry while connected.');return;}const c=new BroadcastChannel('synapse-auth-session');c.postMessage('signed-out');c.close();leaving=true;window.location.replace('/login');}catch{setSessionError('Sign-out could not be confirmed. Check your connection and retry.');}finally{if(!leaving){signOutLock.current=false;setSigningOut(false);}}};
+  if(!snapshot?.me)return <main className="boot"><div className="brand-mark"><Network/></div><h1>SYNAPSE</h1><p role="status">{status==='error'?'Your workspace could not be loaded.':'Loading your authorized workspace…'}</p>{status==='error'&&<><Feedback message={message} tone="error"/><button className="btn" disabled={refreshing} onClick={()=>void load()}>{refreshing&&<Spinner/>}{refreshing?"Connecting…":"Retry connection"}</button><Link prefetch={false} href="/login">Sign in</Link><button className="btn" disabled={signingOut} onClick={()=>void signOut()}>{signingOut?"Signing out…":"Sign out"}</button><Feedback message={sessionError}/></>}</main>;
   const {cases,tasks,findings}=snapshot,me=snapshot.me;
   const actor={name:me.name,role:me.roles.map(code=>liveRoleLabels[code as keyof typeof liveRoleLabels]??code).join(' · '),bureau:me.bureauIds.map(id=>snapshot.bureaus.find(b=>b.id===id)?.name??id).join(', ')};
   const isAdmin=me.roles.includes('SYSTEM_ADMIN');
@@ -149,13 +161,14 @@ export function Shell({ children }: { children: ReactNode }) {
   const alerts=[...snapshot.notifications].sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)).slice(0,8),unread=snapshot.notifications.filter(n=>!n.readAt).length;
   const results=cases.filter(c=>(c.subject+' '+c.caseNumber+' '+(snapshot.institutions.find(i=>i.id===c.institutionId)?.name??'')).toLowerCase().includes(query.toLowerCase())).slice(0,6);
   function navigate(href: string) {
-    router.push(href);
+    if(navigating)return;startNavigation(()=>router.push(href));
+    setUserMenu(false);setNotifications(false);
     setSearch(false);
     setDrawer(false);
   }
   return (
     <div
-      className={`app-shell ${pathname === "/dashboard" ? "overview-shell" : ""}`}
+      className={`app-shell ${workspacePath === "/dashboard" ? "overview-shell" : ""}`}
     >
       <a href="#main" className="skip-link">
         Skip to content
@@ -212,10 +225,12 @@ export function Shell({ children }: { children: ReactNode }) {
                   <Link prefetch={false}
                     key={route}
                     href={`/${route}`}
+                    aria-disabled={navigating||undefined}
+                    onNavigate={event=>{event.preventDefault();navigate(`/${route}`);}}
                     onClick={() => setDrawer(false)}
-                    className={`nav-link ${pathname.startsWith(`/${route}`) ? "active" : ""}`}
+                    className={`nav-link ${workspacePath.startsWith(`/${route}`) ? "active" : ""}`}
                     aria-current={
-                      pathname.startsWith(`/${route}`) ? "page" : undefined
+                      workspacePath.startsWith(`/${route}`) ? "page" : undefined
                     }
                   >
                     <Icon size={18} strokeWidth={1.7} />
@@ -251,11 +266,12 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
           <div className="sidebar-foot">
             <span className="status-dot" />
-            {snapshot.workspace?'Authenticated Supabase workspace':'Authenticated development workspace'}
+            {snapshot.workspace?'Secure officer workspace':'Development workspace'}
           </div>
         </div>
       </aside>
       <div className="app-body">
+        {(navigating||busy)&&<div className="navigation-progress" role="status" aria-label={navigating?"Opening page":"Saving changes"}><span/></div>}
         <header className="topbar">
           <button
             className="icon-btn mobile-menu"
@@ -271,17 +287,19 @@ export function Shell({ children }: { children: ReactNode }) {
             onClick={() => setSearch(true)}
           >
             <Search size={17} />
-            <span>Search cases, institutions and more…</span>
+            <span>Search pages and authorized cases…</span>
             <kbd>Ctrl K</kbd>
           </button>
           <div className="topbar-actions">
             <span className="demo-pill">
               <span />
-              {snapshot.workspace?'Read-only':'Development'}
+              {snapshot.workspace?(snapshot.workspace.mode==='ACCOUNT_ONLY'?'Account preview':'Read-only'):'Development'}
             </span>
             <button
               className="icon-btn notification-trigger"
-              aria-label={`Notifications, ${unread} unread`}
+              ref={notificationTrigger}
+              aria-controls="notification-panel"
+              aria-label={snapshot.workspace?"Notifications, not connected":`Notifications, ${unread} unread`}
               aria-expanded={notifications}
               onClick={() => {
                 setNotifications((v) => !v);
@@ -294,6 +312,8 @@ export function Shell({ children }: { children: ReactNode }) {
             <div className="topbar-divider" />
             <button
               className="user-trigger"
+              ref={profileTrigger}
+              aria-controls="profile-panel"
               aria-label="User menu"
               aria-expanded={userMenu}
               onClick={() => {
@@ -310,12 +330,12 @@ export function Shell({ children }: { children: ReactNode }) {
             </button>
           </div>
           {notifications && (
-            <div className="top-popover">
+            <div className="top-popover" ref={notificationPanel} id="notification-panel" role="region" aria-label="Notifications">
               <div className="card-head">
                 <h2>Notifications</h2>
                 <button
                   className="text-btn"
-                  disabled={busy||!unread}
+                  disabled={busy||!unread||!!snapshot.workspace}
                   onClick={async()=>{for(const item of snapshot.notifications.filter(n=>!n.readAt)){if(!await command({type:'notification.read',notificationId:item.id},crypto.randomUUID()))break;}}}
                 >
                   Mark all read
@@ -340,17 +360,17 @@ export function Shell({ children }: { children: ReactNode }) {
                   )}
                 </Link>
               ))}
-              {!alerts.length && <Empty title="You’re all caught up" />}
+              {!alerts.length && <Empty title={snapshot.workspace?"Notifications are not connected":"You’re all caught up"} description={snapshot.workspace?"Your case notifications will appear once this workflow is enabled.":"New updates will appear here."}/>}
             </div>
           )}
           {userMenu && (
-            <div className="top-popover user-popover">
+            <div className="top-popover user-popover" ref={profilePanel} id="profile-panel" role="region" aria-label="Account menu">
               <strong>{actor.name}</strong>
               <p>
                 {actor.role} · {actor.bureau}
               </p>
-              <Badge tone="green">Verified account</Badge><button className="menu-link" onClick={()=>void signOut()}>Sign out</button>
-              {sessionError&&<p role="alert">{sessionError}</p>}
+              <Badge tone="green">Verified account</Badge><button className="menu-link" disabled={signingOut} onClick={()=>void signOut()}>{signingOut&&<Spinner/>}{signingOut?"Signing out…":"Sign out"}</button>
+              <Feedback message={sessionError}/>
               <Link prefetch={false}
                 className="menu-link"
                 href="/settings"
@@ -378,14 +398,14 @@ export function Shell({ children }: { children: ReactNode }) {
           <span className="role-switch">{actor.role}</span>
 
         </div>
-        <main id="main" className="main-workspace">
+        <main id="main" className="main-workspace" aria-busy={navigating}><div key={pathname} className="route-enter">
           {children}
-        </main>
+        </div></main>
         <footer className="app-footer">
           <span>SYNAPSE · SIH 2026 prototype</span>
           <span>
             <Activity size={12} />
-            Persistent PostgreSQL · Hosted release disabled
+            {snapshot.workspace?(snapshot.workspace.mode==='ACCOUNT_ONLY'?'Account workspace · Complaint preview pending':'Authorized case preview · Read only'):'Isolated development workspace'}
           </span>
         </footer>
       </div>
@@ -425,8 +445,8 @@ export function Shell({ children }: { children: ReactNode }) {
             ))}
             {!results.length && (
               <Empty
-                title="No matching cases"
-                description="Only cases authorized for your current perspective appear here."
+                title={snapshot.workspace?.mode==='ACCOUNT_ONLY'?"Case search awaits complaint preview":"No matching cases"}
+                description={snapshot.workspace?.mode==='ACCOUNT_ONLY'?"You can search and open workspace pages below. See the workspace guide for complaint access.":"Only cases authorized for your current perspective appear here."}
               />
             )}
             <div className="eyebrow">GO TO WORKSPACE</div>
