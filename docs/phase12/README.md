@@ -10,7 +10,7 @@ The owner's reported failure was confirmed in actual Vercel request logs: `/inta
 
 Protected sidebar/account navigation and dashboard calendar links now disable automatic Next.js prefetch. This removes background authenticated route requests from merely displaying the navigation; explicit navigation still performs the existing online Auth and current-approval checks. No RSC/prefetch exemption, role bypass or identity cache was added. The change mitigates unnecessary request bursts; it is not presented as proof of a specific pool-capacity incident.
 
-The proxy now classifies an explicit current-approval 403 separately from service unavailability and avoids redirecting a failed pending-approval request to itself. True 503s return a safe diagnostic category and emit only that category in structured server logs. No claims, tokens, passwords, connection strings, user details, query parameters or raw provider errors are logged. Configuration failures remain fail-closed. Database pool settings/grants and Supabase activation settings were not changed.
+The proxy now classifies an explicit current-approval 403 separately from service unavailability and avoids redirecting a failed pending-approval request to itself. True 503s return a safe diagnostic category and emit only that category in structured server logs. No claims, tokens, passwords, connection strings, user details, query parameters or raw provider errors are logged. Configuration failures remain fail-closed. Grants and Supabase activation settings were not changed. A subsequent deployed check reproduced a connection failure and established gateway role exhaustion; the scoped recovery and transaction-pool/lifecycle correction are documented in [CONNECTION_RECOVERY.md](CONNECTION_RECOVERY.md). Earlier historical requests without diagnostic detail cannot independently be assigned that cause.
 
 ## Verification
 
@@ -21,3 +21,5 @@ The proxy now classifies an explicit current-approval 403 separately from servic
 - Independent read-preview approval, positive hosted case acceptance, natural JWT-expiry soak, the previously recorded advisories and full hosted workflow integration remain outstanding as documented in Phase 11. Seeing the cards does not grant complaint access.
 
 Reproduce the account UI checks after `npm run build` with `node scripts/phase11/test-browser.mjs`; source and fixtures are explicitly separated from the actual-account results. User manual acceptance remains **AWAITING USER MANUAL TESTING**.
+
+The follow-up uses the same existing restricted Supabase login through its verified shared transaction pooler. All twelve actual-issued-JWT hosted checks passed again through that endpoint, including self-revocation rejection. No new database, connection-limit increase, permission change or business activation was introduced. Dependency audit passes after a scoped patched-Zod override for the new Vercel lifecycle helper.

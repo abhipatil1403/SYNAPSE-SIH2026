@@ -1,5 +1,6 @@
 import "server-only";
 import { Pool } from "pg";
+import { attachDatabasePool } from "@vercel/functions/db-connections";
 import { gatewayCa } from "./gateway-ca";
 import { createHmac } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -15,7 +16,10 @@ function database() {
     !/^(?:db\.xjnukuerzlrxjjqwmgkn\.supabase\.co|aws-[a-z0-9-]+\.pooler\.supabase\.com)$/.test(url.hostname))
     throw new Phase1Error(503, "gateway_unavailable", "The officer gateway configuration could not be verified.");
   pool = new Pool({ connectionString: connection, ssl: { ca: gatewayCa(), rejectUnauthorized: true, servername: url.hostname },
-    max: 5, idleTimeoutMillis: 10000, connectionTimeoutMillis: 10000, statement_timeout: 5000 });
+    max: 3, idleTimeoutMillis: 5000, connectionTimeoutMillis: 10000, statement_timeout: 5000 });
+  // Keep Fluid instances alive until released connections can close. The
+  // transaction pooler multiplexes these clients without retaining role/claims.
+  if (process.env.VERCEL === "1") attachDatabasePool(pool);
   pool.on("error", () => { /* No URL/provider/user material is written to logs. */ });
   return pool;
 }
