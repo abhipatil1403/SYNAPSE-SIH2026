@@ -1,0 +1,34 @@
+{
+  "checkedAt": "2026-10-27T21:30:30.252Z",
+  "reviewedCommit": "c30898630e061a5874c103e9f63ce4b7efa0e744",
+  "testedReleaseCommit": "51cb05f1b2a852d3be5f91a21aa0a8a8ba64e437",
+  "sourceCorrectionScope": [
+    "components/account-profile.tsx",
+    "lib/hosted/store.ts",
+    "lib/live/request.ts"
+  ],
+  "ownerApprovalSource": "Human user response in this conversation: Approve development activation after CI passes",
+  "ciVerified": [
+    {
+      "id": 40584758365,
+      "conclusion": "success"
+    },
+    {
+      "id": 40584747668,
+      "conclusion": "success"
+    }
+  ],
+  "gitGuardianPassed": true,
+  "currentAdministratorAndConfirmedProviderMappingVerified": true,
+  "applied": true,
+  "transactionalDryRun": false,
+  "databaseDevelopmentOperationsEnabled": true,
+  "databaseDevelopmentWritesEnabled": true,
+  "roleAssignmentsUnchanged": true,
+  "bureauMembershipsUnchanged": true,
+  "legacyReadLeaseUnchanged": true,
+  "publicCaseRpcsClosed": true,
+  "managedSchemaModified": false,
+  "webServiceRoleIntroduced": false,
+  "scope": "Owner-approved development core workflows only; Gmail scheduling off and private scanner acceptance pending. This is not global production Live Mode sign-off."
+}

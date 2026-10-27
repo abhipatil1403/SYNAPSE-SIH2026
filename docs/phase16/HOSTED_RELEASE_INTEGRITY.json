@@ -1,0 +1,20 @@
+{
+  "checkedAt": "2026-10-27T21:30:31.987Z",
+  "realHosted": true,
+  "readOnlyOperatorPostflight": true,
+  "existingRoleAssignmentsUnchanged": true,
+  "existingBureauMembershipsUnchanged": true,
+  "reviewedDevelopmentOperationsEnabled": true,
+  "developmentWritesEnabled": true,
+  "legacyReadLeaseClosed": true,
+  "publicDirectCaseRpcsClosed": true,
+  "actualCanonicalDevelopmentCases": 2,
+  "originalComplaintContentPreserved": true,
+  "actualCloudTranslationReviewed": true,
+  "realAttachmentBytesPersisted": true,
+  "attachmentQuarantined": true,
+  "fabricatedScannerReceipts": 0,
+  "ownerApprovalAuditPresent": true,
+  "managedSchemaModified": false,
+  "allPassed": true
+}

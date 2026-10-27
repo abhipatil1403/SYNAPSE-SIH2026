@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-10-27T21:05:22.007136+00:00",
+  "observedHostedFailure": {
+    "http": 503,
+    "safeCode": "operations_unavailable",
+    "databaseStage": "lock",
+    "sqlState": "57014"
+  },
+  "source": "Actual Vercel sanitized runtime event; no SQL values, tokens or complaint content logged",
+  "initialPreflightBusinessCasesCreated": 0,
+  "failClosedResponse": "Database development gates disabled immediately; read-only diagnostic subsequently enabled with writes OFF",
+  "correction": "Canonical snapshots use REPEATABLE READ READ ONLY without the global advisory write lock; business writes retain their original serialization and RLS checks",
+  "correctiveCommit": "c6fe94cca75ba7b7cbb5cbdb906fc75b9401225e",
+  "regression": "Actual disposable PostgreSQL writer holds the advisory lock while an authorized snapshot completes independently; full canonical authorization suite passed",
+  "roleOrMembershipGrantAdded": false,
+  "schemaChanged": false,
+  "fullProductionActivationApproved": false
+}

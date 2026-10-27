@@ -8,5 +8,8 @@
       "path": "/api/cron/deadlines",
       "schedule": "0 4 * * *"
     }
+  ],
+  "regions": [
+    "bom1"
   ]
 }
