@@ -1,8 +1,12 @@
 {
-  "checkedAt": "2026-10-27T19:15:50.260Z",
+  "checkedAt": "2026-10-27T20:22:36.405Z",
+  "realDevelopmentProviderChecks": true,
   "operationsSha256": "afbbb100279dfd29e873c59792ee80fb642c7d6ff3ed208c2f97b7cafa491e4c",
   "gmailSha256": "6b3d0a7716760b53e39b5a8544ea0ef9b8c11eee4b4c82831813238420cf8c52",
   "gmailAuthoritySha256": "8245019e18ce5e7c47d20d874b95e853b5d6583a8f51efeb490146dbdffb25f9",
+  "processingSha256": "0dd2fea32e217ea5210185cec0463f68d6e69431b2ba0dfe5f0a10794ccb64f5",
+  "scannerSha256": "fd05d4d5f591c64a6430198b6722bc812eca9c95231eb6f2649033c3437ec265",
+  "deadlineSha256": "be0dfa06e33904a2aa482cc82205002e7923a9c2b8bd8a1e49ff79e2aba2386f",
   "profileSha256": "519a64cbae667dc024d9fffb27d3ffc54921026e35e4666e646c433ad897ebba",
   "workspaceSha256": "6146e5c83c2e69b0f6c58d0115541efc8224cfbf17c847aacc62f039a9b0cfd0",
   "authLifecycleSha256": "9cfdfde671659a85765b4f24c64256d059c273e72fdfb36900adc4d147f18656",
@@ -102,6 +106,9 @@
     "LOCAL AUTH: recovery requires an expiring one-use session grant; distributed database throttle rejects excess attempts.",
     "LOCAL AUTH: competing administrator role revocation blocks until the sensitive approval transaction ends; rollback leaves no target membership.",
     "LOCAL WORKSPACE: private browser/service denial, approved account-only fallback, expiring gate, exact bigint data, actual case/SLA/calendar metrics, cross-Bureau isolation, no admin case bypass, suspension, role/membership expiry and revoked-session denial PASS. Synthetic SQL claims only; every fixture and gate change rolled back.",
+    "HOSTED DEADLINES: actual reviewed rule and canonical SLA produce persistent notifications and dedupe receipts, future reminder targets assigned officer only, overdue targets current Bureau Head, suspended users/inactive Bureaus denied, global administrator required for manual service run, no complaint-body column privilege and inactive release denied PASS. Synthetic SQL fixtures; no production delivery.",
+    "PRIVATE SCANNER SQL: actual PostgreSQL denies CLEAN and human VERIFIED without scanner provenance; explicit mock receipt permits authorized clearance; other Bureau sees no bytes/receipt; infected state blocks download even with an older clean receipt PASS. Scanner transport/verdict mocked; no real end-to-end ClamAV scan claimed.",
+    "HOSTED PROCESSING: real disposable PostgreSQL leases, blocked configuration, mocked actual-provider contract persistence/provenance, original preservation, human translation review, stale-source rejection, indexed authorized candidates, cross-Bureau provider denial, metadata-only discovery, independent access approval/revocation, no admin case bypass and private nonowning discovery grants PASS. Provider transport mocked for the authorization fixtures; no hosted activation. Additional real approved development-provider requests: Google Cloud Translation and Gemini actual results persisted with provenance in disposable canonical PostgreSQL PASS; no production complaint data, no hosted writes, no mailbox read.",
     "GMAIL SQL: private function ownership/grants/search_path, non-bypass role, administrator-only OAuth, session-bound one-time state and completion, operations release denial, worker lease isolation, durable de-duplication, actual canonical draft/raw MIME/attachment/audit persistence, human review default, inactive Bureau and revoked officer denial PASS. Synthetic SQL fixtures only; no provider/mailbox test.",
     "CANONICAL HOSTED ADAPTER: actual disposable PostgreSQL intake, verification, registration, idempotency, optimistic concurrency, tasks, calendar reschedule/cancel, policy/SLA, audited disposal, dashboard values, two-Bureau isolation, no admin case bypass, suspension and revoked-session rejection PASS. Synthetic SQL claims only; no deployed activation."
   ]

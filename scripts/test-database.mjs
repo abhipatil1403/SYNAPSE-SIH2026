@@ -166,7 +166,7 @@ try {
   for (const file of (await readdir("supabase/migrations"))
     // Historical authorization suites run against their own migration boundary;
     // the gateway correction and its inverse direct-RPC assertions run afterward.
-    .filter((f) => f.endsWith(".sql") && !f.includes("phase6_") && !f.includes("phase9_") && !f.includes("phase10_") && !f.includes("phase11_") && !f.includes("phase14_") && !f.includes("phase15_") && (phase2 || !f.includes("phase2_")))
+    .filter((f) => f.endsWith(".sql") && !f.includes("phase6_") && !f.includes("phase9_") && !f.includes("phase10_") && !f.includes("phase11_") && !f.includes("phase14_") && !f.includes("phase15_") && !f.includes("phase16_") && (phase2 || !f.includes("phase2_")))
     .sort()) {
     await db.query("BEGIN");
     try {
@@ -282,14 +282,21 @@ try {
     const gmail=(await readdir('supabase/candidates')).find(n=>n.endsWith('_phase15_hosted_gmail_oauth.sql'));
     await db.query('BEGIN');try{await db.query(await readFile('supabase/candidates/'+gmail,'utf8'));await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
     await db.query('BEGIN');try{await db.query(await readFile('supabase/candidates/20261027185138_phase15_active_intake_bureau.sql','utf8'));await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
+    await db.query('BEGIN');try{await db.query(await readFile('supabase/candidates/20261027193348_phase16_processing_and_discovery.sql','utf8'));await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
+    await db.query('BEGIN');try{await db.query(await readFile('supabase/candidates/20261027194500_phase16_private_attachment_scanning.sql','utf8'));await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
+    await db.query('BEGIN');try{await db.query(await readFile('supabase/candidates/20261027200002_phase16_hosted_deadline_notifications.sql','utf8'));await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
     const {verifyCanonicalOperations}=await import('./phase14/test-canonical.ts');results.push(...await verifyCanonicalOperations(db,parsed.toString()));
   }
   await mkdir(platform ? "docs/phase3-5" : phase2 ? "docs/phase2" : "docs/phase1", { recursive: true });
   const report = {
     checkedAt: new Date().toISOString(),
+    realDevelopmentProviderChecks:operations&&process.argv.includes('--real-providers'),
     operationsSha256:operations?createHash('sha256').update(await readFile('supabase/candidates/20261027171357_phase14_canonical_operations.sql','utf8')).digest('hex'):null,
     gmailSha256:operations?createHash('sha256').update(await readFile('supabase/candidates/20261027174828_phase15_hosted_gmail_oauth.sql','utf8')).digest('hex'):null,
     gmailAuthoritySha256:operations?createHash('sha256').update(await readFile('supabase/candidates/20261027185138_phase15_active_intake_bureau.sql','utf8')).digest('hex'):null,
+    processingSha256:operations?createHash('sha256').update(await readFile('supabase/candidates/20261027193348_phase16_processing_and_discovery.sql','utf8')).digest('hex'):null,
+    scannerSha256:operations?createHash('sha256').update(await readFile('supabase/candidates/20261027194500_phase16_private_attachment_scanning.sql','utf8')).digest('hex'):null,
+    deadlineSha256:operations?createHash('sha256').update(await readFile('supabase/candidates/20261027200002_phase16_hosted_deadline_notifications.sql','utf8')).digest('hex'):null,
     profileSha256:auth?createHash("sha256").update(await readFile("supabase/candidates/20261027075125_phase10_self_profile.sql","utf8")).digest("hex"):null,
     workspaceSha256:auth?createHash("sha256").update(await readFile("supabase/candidates/20261027124140_phase11_readonly_workspace.sql","utf8")).digest("hex"):null,
     authLifecycleSha256:auth?createHash("sha256").update(await readFile("supabase/candidates/20261026215821_phase9_password_approval_lifecycle.sql","utf8")).digest("hex"):null,
@@ -323,7 +330,7 @@ try {
   if (phase2) await admin.query("DROP ROLE IF EXISTS synapse_session_revoker");
   if (platform) await admin.query("DROP ROLE IF EXISTS synapse_session_validator");
   if (auth) await admin.query("DROP ROLE IF EXISTS synapse_web_gateway,synapse_account_manager");
-  if(operations)await admin.query("DROP ROLE IF EXISTS synapse_operations_test_login,synapse_operations_runtime,synapse_gmail_test_login,synapse_gmail_manager");
+  if(operations)await admin.query("DROP ROLE IF EXISTS synapse_operations_test_login,synapse_operations_runtime,synapse_gmail_test_login,synapse_gmail_manager,synapse_discovery_reader,synapse_deadline_test_login,synapse_deadline_notifier");
   if (sla) await admin.query("DROP ROLE IF EXISTS synapse_sla_worker");
   await admin.end();
 }

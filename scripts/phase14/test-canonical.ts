@@ -88,7 +88,7 @@ export async function verifyCanonicalOperations(db: Client, url: string) {
         const mailCase = await send({ type: 'draft.register', draftId: gmailResult.draftId, expectedVersion: '2', categoryId: category.entityId, officerId: users[0], priority: 'NORMAL' });
         const persisted = (await snapshot()).evidence.find(e => e.caseId === mailCase.entityId);
         assert.ok(persisted);
-        assert.equal(persisted.scan, 'NOT_REQUIRED');
+        assert.equal(persisted.scan, 'PENDING');
         assert.equal(persisted.status, 'SUBMITTED');
         assert.equal((await db.query('SELECT octet_length(bytes) n FROM synapse_gateway.document_bytes WHERE version_id=$1', [persisted.versionId])).rows[0].n, Buffer.byteLength('Synthetic plain-text evidence'));
         const other = await pool.connect();
@@ -112,12 +112,16 @@ export async function verifyCanonicalOperations(db: Client, url: string) {
         assert.equal((await snapshot()).drafts.some(d => d.id === gmailResult.draftId), false);
         assert.equal((await snapshot()).evidence.some(e => e.caseId === mailCase.entityId), false);
         assert.equal((await snapshot(1)).cases.some(c => c.id === mailCase.entityId), true);
+        const {verifyDeadlineNotifications}=await import('../phase16/test-deadlines');const deadlineResult=await verifyDeadlineNotifications(db,pool,url,users,auth,sid,mailCase.entityId,policy.entityId,bureaus[1]);
+        const {verifyScannerAuthorization}=await import('../phase16/test-scanning');const scannerResult=await verifyScannerAuthorization(pool,users,auth,sid,mailCase.entityId);
+        const {verifyHostedProcessing}=await import('../phase16/test-processing');const processingResult=await verifyHostedProcessing(db,pool,users,auth,sid,bureaus,institution.entityId,category.entityId);
+        await db.query('UPDATE synapse.bureaus SET is_active=false WHERE bureau_id=$1',[bureaus[0]]);await assert.rejects(snapshot(),{code:'current_approval_required'});await db.query('UPDATE synapse.bureaus SET is_active=true WHERE bureau_id=$1',[bureaus[0]]);
         await db.query("UPDATE synapse.users SET account_status='SUSPENDED' WHERE user_id=$1", [users[0]]);
         await assert.rejects(snapshot(), { code: 'current_approval_required' });
         await db.query("UPDATE synapse.users SET account_status='ACTIVE' WHERE user_id=$1", [users[0]]);
         await db.query('INSERT INTO synapse.auth_session_revocations(session_id,auth_user_id) VALUES($1,$2)', [sid[0], auth[0]]);
         await assert.rejects(snapshot());
-        return [gmailResult.message, 'CANONICAL HOSTED ADAPTER: actual disposable PostgreSQL intake, verification, registration, idempotency, optimistic concurrency, tasks, calendar reschedule/cancel, policy/SLA, audited disposal, dashboard values, two-Bureau isolation, no admin case bypass, suspension and revoked-session rejection PASS. Synthetic SQL claims only; no deployed activation.'];
+        return [deadlineResult,scannerResult,processingResult,gmailResult.message, 'CANONICAL HOSTED ADAPTER: actual disposable PostgreSQL intake, verification, registration, idempotency, optimistic concurrency, tasks, calendar reschedule/cancel, policy/SLA, audited disposal, dashboard values, two-Bureau isolation, no admin case bypass, suspension and revoked-session rejection PASS. Synthetic SQL claims only; no deployed activation.'];
     }
     finally {
         await pool.end();

@@ -124,8 +124,8 @@ export class PlatformEngine {
         const row = s.notifications.find((n) => n.id === cmd.notificationId && n.userId === user.id);
         reject(row, "not_found", "The notification is unavailable.", 404); row.readAt = now; entityId = row.id;
       } else if (cmd.type === "access.request") {
-        // No object-existence oracle: requests require existing authorized details.
-        const c = s.cases.find((c) => c.id === cmd.caseId && (canRead(s, user, c, now) || c.discoverable && discoveryAllowed(user, now)));
+        // Requests require authorized details or a server-projected metadata-only discovery record.
+        const c = s.cases.find((c) => c.id === cmd.caseId && (canRead(s, user, c, now) || c.discoverable && discoveryAllowed(user, now))) ?? (discoveryAllowed(user,now)?s.discovery?.find(c=>c.id===cmd.caseId):undefined);
         reject(c, "not_found", "No permitted discovery record is available.", 404);
         reject(Date.parse(cmd.until) > Date.parse(now) && Date.parse(cmd.until) <= Date.parse(now) + 7 * 86400000, "invalid_expiry", "Requests must expire within seven days.", 400);
         s.accessRequests.push({ id: entityId, caseId: c.id, requesterId: user.id, scope: cmd.scope, until: cmd.until, reason: cmd.reason, status: "PENDING", reviewerId: null });

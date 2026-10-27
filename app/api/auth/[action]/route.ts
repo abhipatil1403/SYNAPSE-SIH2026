@@ -1,3 +1,4 @@
+import {hostedOperationsActive} from "@/lib/hosted/control";
 import { NextRequest } from "next/server";
 import { z, ZodError } from "zod";
 import { authContext } from "@/lib/auth/server";
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!["session", "approvals", "memberships", "roles", "cases", "readiness", "profile"].includes(action)) return ctx.respond({ error: { message: "Route unavailable." } }, 404);
     const resolved = await ctx.account();
     if (action === "profile") return ctx.respond({email:resolved.user.email,displayName:resolved.account.displayName??"",status:resolved.account.status,roles:resolved.account.roles,memberships:resolved.account.memberships});
-    if (action === "readiness") return ctx.respond(await authReadiness());
+    if (action === "readiness") {if(!resolved.account.roles.includes("SYSTEM_ADMIN"))throw new Phase1Error(403,"configuration_authority_required","System Administrator access is required.");return ctx.respond(await authReadiness(resolved.claims));}
     if (action === "memberships") return ctx.respond(await gateway("memberships", resolved.claims, "list"));
     if (action === "roles") return ctx.respond(roleAssignmentsSchema.parse(await gateway("roles", resolved.claims, "list")));
     if (action === "cases") {
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       if (process.env.SYNAPSE_PHASE1_READ_ENABLED !== "true") throw new Phase1Error(503, "preview_locked", "Live case access is awaiting security approval. Your verified account is active.");
       return ctx.respond(await gateway("read", resolved.claims, "cases", parseCaseQuery(request.nextUrl.searchParams)));
     }
-    if (action === "session") return ctx.respond({ account: resolved.account, destination: accountDestination(resolved.account), liveEnabled: false });
+    if (action === "session") return ctx.respond({ account: resolved.account, destination: accountDestination(resolved.account), liveEnabled: resolved.account.status==="APPROVED"&&await hostedOperationsActive() });
     const listing = z.object({ requests: z.array(z.object({ auth_user_id: z.uuid(), email: z.email(), display_name: z.string(), status: z.string(), revision: z.string(), requested_at: z.string(),history:z.array(z.object({action:z.string(),at:z.string(),actorId:z.string().nullable(),detail:z.record(z.string(),z.unknown())})) })),
       bureaus: z.array(z.object({ id: z.uuid(), name: z.string() })) }).parse(await gateway("applicants", resolved.claims, "list"));
     return ctx.respond({ ...listing, requests: listing.requests.map((row) => ({ ...row, canDecide: row.auth_user_id !== resolved.claims.sub })) });
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const input = loginSchema.parse(await smallJson(request)); await throttle(request, "login", input.email);
       const { error } = await ctx.client.auth.signInWithPassword(input); providerFailure(error, true);
       const resolved = await ctx.account();
-      return ctx.respond({ account: resolved.account, destination: accountDestination(resolved.account), liveEnabled: false });
+      return ctx.respond({ account: resolved.account, destination: accountDestination(resolved.account), liveEnabled: resolved.account.status==="APPROVED"&&await hostedOperationsActive() });
     }
     if (action === "signup") {
       const input = signupSchema.parse(await smallJson(request)); await throttle(request, "signup", input.email);
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       providerFailure(error);
       if(!data.session)throw new Phase1Error(409,'immediate_signup_unavailable','An immediate password session was not issued. Contact the administrator to check signup settings, or try signing in if already registered.');
       const resolved=await ctx.account();
-      return ctx.respond({message:'Account created. Administrator approval is required before complaint access.',account:resolved.account,destination:accountDestination(resolved.account),liveEnabled:false});
+      return ctx.respond({message:'Account created. Administrator approval is required before complaint access.',account:resolved.account,destination:accountDestination(resolved.account),liveEnabled:resolved.account.status==="APPROVED"&&await hostedOperationsActive()});
     }
     if (action === "forgot-password") {
       const input = emailSchema.parse(await smallJson(request)); await throttle(request, "recovery", input.email);
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (action === "refresh") {
       const { error } = await ctx.client.auth.refreshSession();
       if (error) { ctx.clear(); throw new Phase1Error(error.status === 429 ? 429 : error.status && error.status >= 500 ? 503 : 401, "session_refresh_failed", "Your session could not be refreshed. Sign in again."); }
-      const resolved = await ctx.account(); return ctx.respond({ account: resolved.account, destination: accountDestination(resolved.account), liveEnabled: false });
+      const resolved = await ctx.account(); return ctx.respond({ account: resolved.account, destination: accountDestination(resolved.account), liveEnabled: resolved.account.status==="APPROVED"&&await hostedOperationsActive() });
     }
     if (action === "profile") {
       const input=z.object({name:z.string().trim().min(2).max(150)}).strict().parse(await smallJson(request)),identity=await ctx.account();

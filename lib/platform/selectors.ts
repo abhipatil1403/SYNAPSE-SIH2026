@@ -23,7 +23,7 @@ export function authorizedSnapshot(state: State, principal: Principal, now: stri
     institutions: discoveryAllowed(u, now) || configurationAdmin(u, now) ? state.institutions : [],
     directory: state.staff.filter((v) => v.active).map((v) => ({ id: v.id, name: v.name, bureauIds: v.memberships.filter((m) => current(m.from, m.until, now)).map((m) => m.bureauId), roles: v.roles.filter((r) => current(r.from, r.until, now)).map((r) => r.code) })),
     me: { id: u.id, name: u.name, bureauIds: u.memberships.filter((m) => current(m.from, m.until, now)).map((m) => m.bureauId), roles: u.roles.filter((r) => current(r.from, r.until, now)).map((r) => r.code) },
-    discovery: discoveryAllowed(u, now) ? state.cases.filter((c) => c.discoverable && !ids.has(c.id)).map((c) => ({ id: c.id, caseNumber: c.caseNumber, institutionId: c.institutionId, categoryId: c.categoryId, bureauId: c.bureauId })) : [],
+    discovery: discoveryAllowed(u, now) ? [...(state.discovery??[]).filter(c=>!ids.has(c.id)),...state.cases.filter((c) => c.discoverable && !ids.has(c.id)).map((c) => ({ id: c.id, caseNumber: c.caseNumber, institutionId: c.institutionId, categoryId: c.categoryId, bureauId: c.bureauId }))].filter((c,i,rows)=>rows.findIndex(x=>x.id===c.id)===i) : [],
     actions: state.actions?.filter((a) => ids.has(a.caseId)),
     conflicts: state.conflicts?.filter((f) => f.caseIds.every((id) => ids.has(id))),
     translations: state.translations?.filter((t) => state.drafts.some((d) => d.id === t.draftId && intakeAuthority(u, d.bureauId, now) && (d.creatorId === u.id || role(u, "BUREAU_HEAD", d.bureauId, now)))),

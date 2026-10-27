@@ -1,9 +1,10 @@
 import "server-only";
+import {verifyCurrentSession} from "./live-session";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { phase1Config } from "../live/config";
 import { Phase1Error } from "../live/service";
-import { accountSchema, validatedClaims } from "./policy";
+import { accountSchema } from "./policy";
 import { gateway } from "./gateway";
 import {passwordSignUp} from './password-signup';
 import {privateProfileSchema} from './profile';
@@ -29,13 +30,7 @@ export function authContext(request: NextRequest) {
     if (clearLegacy) for (const name of ["synapse-phase1-session", ...Array.from({ length: 8 }, (_, i) => `synapse-phase1-session.${i}`)]) response.cookies.set(name, "", { path: "/api/phase1", maxAge: 0, httpOnly: true, secure: config.secureCookies, sameSite: "lax" });
     return response;
   };
-  const verified = async () => {
-    const { data, error } = await client.auth.getUser();
-    if (error || !data.user || !data.user.email) throw new Phase1Error(error?.status && error.status >= 500 ? 503 : 401, "authentication_required", "Sign in with your email and password.");
-    const session = await client.auth.getSession();
-    if (!session.data.session) throw new Phase1Error(401, "authentication_required", "Sign in again.");
-    return { user: data.user, claims: validatedClaims(session.data.session.access_token, data.user, config.url) };
-  };
+  const verified = () => verifyCurrentSession(client.auth,config.url);
   const account = async () => {
     const identity = await verified();
     const resolved=accountSchema.parse(await gateway('read',identity.claims,'account'));

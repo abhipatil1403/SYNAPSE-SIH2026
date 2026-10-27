@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-10-27T20:25:24.471Z",
+  "environment": "Actual deployed Supabase / restricted synapse_web_login / verified hostname and CA TLS",
+  "identity": "No JWT or officer identity supplied; no identity impersonation",
+  "checks": [
+    "Restricted login cannot directly query source cases",
+    "Private OAuth options reject missing authenticated administrator",
+    "Gmail worker refuses an inactive complaint write release",
+    "Empty claims see zero cases, submissions, document bytes and original Gmail attachments under actual RLS",
+    "Runtime role cannot enable its own release control",
+    "Empty claims see zero processing jobs, scanner receipts, category suggestions and discovery metadata",
+    "Private deadline delivery refuses the disabled release"
+  ],
+  "businessMutationPerformed": false,
+  "releaseEnabled": false,
+  "actualIssuedJwtTest": false,
+  "googleCalled": false
+}

@@ -179,3 +179,8 @@ These controlled runners require the approved pair, reject an already active gat
 | `local-credential-acl.json` | 2026-10-26T13:21:40.7365035Z |
 | `signoff-final-state.json` | 2026-10-26T13:54:52.221Z |
 
+
+
+## Phase 16 dated follow-up (2026-10-28 local date)
+
+The historical failure and unapplied managed-schema candidate above remain intact. The current private web gateway now requires a real provider refresh followed by online user verification before protected requests (`lib/auth/live-session.ts`). `docs/phase16/HOSTED_SESSION_RESULTS.json` records newly executed real login/refresh/logout/replay tests for the three approved current accounts: provider user lookup after logout returned 403, refresh replay 400 and strict application replay was denied. Both legacy public case RPCs remain ACL-closed before and after logout; no safe reopening is claimed. No managed Auth table or ownership boundary was changed. This current evidence supersedes the assumption that the old provider-user behavior necessarily persists; it does not establish independent release approval, hosted positive business-write acceptance or complete production readiness. See `docs/phase16/RELEASE_REVIEW.md`.

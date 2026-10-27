@@ -81,7 +81,7 @@ export async function ingestGmail(config: ReturnType<typeof gmailConfig>, db: Gm
                 }
                 catch {
                     checked = { name: a.name.replace(/[\\/\r\n\x00]/g, '_').slice(0, 250), mediaType: 'application/octet-stream', sha256: hashBytes(a.bytes), scan: 'PENDING' as const };
-                } return { ...checked, bytes: a.bytes.toString('base64') }; });
+                } return { ...checked,scan:'PENDING' as const,bytes: a.bytes.toString('base64') }; });
                 const fingerprint = hash(JSON.stringify({ version: 'synapse-gmail-normalizer/1', subject: normalizeText(message.subject, true), body: normalizeText(message.body), attachments: attachments.map(a => a.sha256).sort() }));
                 const result = await db<{
                     duplicate?: boolean;

@@ -39,9 +39,20 @@ try {
     checks.push('Real Next HTTP: cross-origin OAuth start denied');
     assert.equal((await call('/api/integrations/gmail/status')).status, 401);
     checks.push('Real Next HTTP: unauthenticated integration status denied');
+    assert.equal((await call('/api/cron/deadlines')).status, 401);
+    const deadlines = await call('/api/cron/deadlines', { headers: { Authorization: 'Bearer ' + secret } });
+    assert.equal(deadlines.status, 200);
+    assert.deepEqual(await deadlines.json(), { enabled: false, delivered: 0 });
+    checks.push('Real Next HTTP: deadline cron requires its bearer and cannot write when operations are disabled');
+    for (const [path, method] of [['/api/workspace/processing/status','GET'],['/api/workspace/processing/run','POST'],['/api/workspace/processing/retry','POST'],['/api/workspace/attachments/scan','POST'],['/api/workspace/reminders','GET']]) {
+        const response=await call(path,{method,headers:{Origin:origin,'Content-Type':'application/json'},...(method==='POST'?{body:'{}'}:{})});
+        assert.equal(response.status,503,path);
+        const body=await response.json();assert.equal(body.error.code,'operations_release_required',path);
+    }
+    checks.push('Real Next HTTP: processing, scanner and reminder endpoints retain the disabled-release boundary; no fake success');
     const report = { checkedAt: new Date().toISOString(), server: 'Next production build / real HTTP', authConfiguration: 'synthetic project and publishable fixture; no session or provider JWT issued', googleConfiguration: 'synthetic; no Google consent or mailbox request performed', browserAutomation: false, checks };
-    await mkdir('docs/phase15', { recursive: true });
-    await writeFile('docs/phase15/HTTP_RESULTS.json', JSON.stringify(report, null, 2) + '\n');
+    await mkdir('docs/phase16', { recursive: true });
+    await writeFile('docs/phase16/HTTP_RESULTS.json', JSON.stringify(report, null, 2) + '\n');
     console.log(JSON.stringify(report, null, 2));
 }
 finally {

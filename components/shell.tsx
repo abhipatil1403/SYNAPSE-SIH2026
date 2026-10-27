@@ -86,7 +86,7 @@ const subscribeMobile = (listener: () => void) => {
 };
 const mobileSnapshot = () => window.matchMedia("(max-width:1024px)").matches;
 export function Shell({ children }: { children: ReactNode }) {
-  const {snapshot,status,message,command,load,busy,refreshing}=useOperational();
+  const {snapshot,status,message,command,load,busy,refreshing,source}=useOperational();
   const pathname = usePathname();
   const workspacePath=pathname.replace(/^\/platform(?=\/|$)/,'').replace(/^\/cases(?=\/|$)/,'/complaints')||'/dashboard';
   const router = useRouter();
@@ -293,7 +293,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="topbar-actions">
             <span className="demo-pill">
               <span />
-              {snapshot.workspace?(snapshot.workspace.mode==='ACCOUNT_ONLY'?'Account preview':'Read-only'):'Development'}
+              {snapshot.workspace?(snapshot.workspace.mode==='ACCOUNT_ONLY'?'Account preview':'Read-only'):source.includes('canonical')?'Connected':'Development'}
             </span>
             <button
               className="icon-btn notification-trigger"
@@ -405,7 +405,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <span>SYNAPSE · SIH 2026 prototype</span>
           <span>
             <Activity size={12} />
-            {snapshot.workspace?(snapshot.workspace.mode==='ACCOUNT_ONLY'?'Account workspace · Complaint preview pending':'Authorized case preview · Read only'):'Isolated development workspace'}
+            {snapshot.workspace?(snapshot.workspace.mode==='ACCOUNT_ONLY'?'Account workspace · Complaint preview pending':'Authorized case preview · Read only'):source.includes('canonical')?'Connected workspace · Authorized Supabase records':'Isolated development workspace'}
           </span>
         </footer>
       </div>

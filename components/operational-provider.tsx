@@ -1,6 +1,6 @@
 "use client";
 import {createContext,useCallback,useContext,useEffect,useRef,useState,type ReactNode} from 'react';
-import {Feedback} from './feedback';
+import {Feedback,useToast} from './feedback';
 import {snapshotSchema,resultSchema,type Snapshot,type Command,type CommandResult} from '@/lib/platform/contracts';
 
 type Context={refreshing:boolean;snapshot:Snapshot|null;status:'loading'|'ready'|'error';message:string;busy:boolean;source:string;load:()=>Promise<boolean>;command:(cmd:Command,key:string,onResult?:(r:CommandResult)=>void)=>Promise<boolean>};
@@ -9,6 +9,7 @@ export function useOperational(){const c=useContext(OperationalContext);if(!c)th
 /** Only a transient authorized query cache. PostgreSQL is authoritative. */
 export function OperationalProvider({children}:{children:ReactNode}){
  const [snapshot,setSnapshot]=useState<Snapshot|null>(null),[status,setStatus]=useState<Context['status']>('loading'),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[source,setSource]=useState('');
+ const {notify}=useToast();
  const [refreshing,setRefreshing]=useState(false),commandLock=useRef(false);
  const generation=useRef(0),active=useRef<AbortController|null>(null),mounted=useRef(true),channel=useRef<BroadcastChannel|null>(null);
  const load=useCallback(async()=>{
@@ -26,7 +27,12 @@ export function OperationalProvider({children}:{children:ReactNode}){
  },[load]);
  const command=async(cmd:Command,key:string,onResult?:(r:CommandResult)=>void)=>{if(commandLock.current)return false;if(snapshot?.workspace){setMessage('Complaint changes are disabled in the hosted read-only workspace.');return false;}commandLock.current=true;setBusy(true);setMessage('');try{const response=await fetch('/api/workspace/commands',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idempotencyKey:key,command:cmd})}),body=await response.json();
   if(!response.ok){const errorMessage=body.error?.message??'The operation was not committed.';setMessage(errorMessage);if([401,403].includes(response.status)){setSnapshot(null);setStatus('loading');await load();setMessage(errorMessage);}return false;}
-  const result=resultSchema.parse(body);onResult?.(result);channel.current?.postMessage({revision:result.revision});const refreshed=await load();if(!refreshed)setMessage('The change was saved, but current data could not be refreshed. Reload before another change.');return true;
+  const result=resultSchema.parse(body);onResult?.(result);channel.current?.postMessage({revision:result.revision});
+  if(source.includes('canonical')&&['draft.create','draft.verify','draft.language'].includes(cmd.type)){
+   notify('Draft saved. Checking authorized source processing…','info');
+   for(let step=0;step<3;step++){try{const response=await fetch('/api/workspace/processing/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({draftId:result.entityId}),signal:AbortSignal.timeout(55000)}),processing=await response.json();if(!response.ok){notify(processing.error?.message??'Draft saved; processing could not finish. Review processing status.','info');break;}if(!processing.processed)break;if(processing.status==='BLOCKED'||processing.status==='FAILED'){notify('Draft saved. Processing needs attention: '+(processing.errorCode??processing.status),'info');break;}}catch{notify('Draft saved. Processing status could not be confirmed; check Intake before retrying.','info');break;}}
+  }
+  const refreshed=await load();if(!refreshed)setMessage('The change was saved, but current data could not be refreshed. Reload before another change.');return true;
  }catch{setMessage('The result could not be verified. Retry with the same request key to avoid duplicate records.');return false;}finally{commandLock.current=false;setBusy(false);}};
  return <OperationalContext.Provider value={{snapshot,status,message,busy,refreshing,source,load,command}}><Feedback message={message} tone="error"/>{children}</OperationalContext.Provider>;
 }

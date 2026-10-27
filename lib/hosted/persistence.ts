@@ -1,3 +1,4 @@
+import {calendarDayKey} from '../calendar';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { PlatformError, type State, type Command } from '../platform/contracts';
@@ -15,7 +16,7 @@ export async function persistCanonicalState(c: PoolClient, before: State, s: Sta
         if (before.policies.some(v => v.id === p.id))
             continue;
         await insert(c, 'synapse.policy_sources', { policy_source_id: p.id, source_code: 'SYNAPSE-' + p.id, title: p.label, issuing_authority: 'Authorized SYNAPSE administrator', source_type: 'INTERNAL_POLICY' });
-        await insert(c, 'synapse.policy_versions', { policy_version_id: p.id, policy_source_id: p.id, version_label: p.label, effective_from: p.from.slice(0, 10), effective_until: p.until?.slice(0, 10) ?? null, approved_by_user_id: actor, approved_at: now, status: 'APPROVED' });
+        await insert(c, 'synapse.policy_versions', { policy_version_id: p.id, policy_source_id: p.id, version_label: p.label, effective_from: calendarDayKey(p.from), effective_until: p.until?calendarDayKey(p.until):null, approved_by_user_id: actor, approved_at: now, status: 'APPROVED' });
         await insert(c, 'synapse.closure_checklists', { closure_checklist_id: p.id, checklist_code: 'SYNAPSE-' + p.id, checklist_name: p.label, is_active: true });
         await insert(c, 'synapse.closure_checklist_versions', { closure_checklist_version_id: p.id, closure_checklist_id: p.id, version_number: 1, policy_version_id: p.id, effective_from: p.from, effective_until: p.until, approved_by_user_id: actor, approved_at: now, status: 'APPROVED' });
         for (const [sort, code] of p.requirements.entries())
@@ -65,15 +66,16 @@ export async function persistCanonicalState(c: PoolClient, before: State, s: Sta
         if (d.linkedCaseId && d.linkedCaseId !== prior?.linkedCaseId)
             await insert(c, 'synapse.submission_case_links', { submission_id: d.id, case_id: d.linkedCaseId, link_type: d.state === 'ACCEPTED' ? 'CREATED' : 'EVIDENCE_FOR', confirmed_by_user_id: actor, confirmed_at: now });
         if (d.linkedCaseId && d.linkedCaseId !== prior?.linkedCaseId && d.source === 'EMAIL') {
-            const files = (await c.query('SELECT name,media_type,sha256,bytes,scan FROM synapse_gateway.gmail_attachments WHERE submission_id=$1', [d.id])).rows;
+            const files = (await c.query('SELECT id,name,media_type,sha256,bytes,scan FROM synapse_gateway.gmail_attachments WHERE submission_id=$1', [d.id])).rows;
             for (const file of files) {
                 if (!['text/plain', 'application/pdf', 'image/png', 'image/jpeg'].includes(file.media_type))
                     continue;
                 const document = randomUUID(), version = randomUUID();
                 await insert(c, 'synapse.documents', { document_id: document, document_type: 'EVIDENCE', owner_case_id: d.linkedCaseId, uploaded_by_user_id: actor });
-                await insert(c, 'synapse.document_versions', { document_version_id: version, document_id: document, version_number: 1, storage_key: 'private-postgres:' + version, original_filename: file.name, media_type: file.media_type, byte_size: file.bytes.length, sha256_hex: file.sha256, uploaded_by_user_id: actor, malware_scan_status: file.scan, uploaded_at: now });
+                await insert(c, 'synapse.document_versions', { document_version_id: version, document_id: document, version_number: 1, storage_key: 'private-postgres:' + version, original_filename: file.name, media_type: file.media_type, byte_size: file.bytes.length, sha256_hex: file.sha256, uploaded_by_user_id: actor, malware_scan_status: file.scan==='CLEAN'?'CLEAN':'PENDING', uploaded_at: now });
                 await insert(c, 'synapse.evidence_items', { evidence_item_id: randomUUID(), document_version_id: version, case_id: d.linkedCaseId, evidence_type: 'DOCUMENT', evidence_status: 'SUBMITTED', source_description: 'Original Gmail submission ' + d.id + '; human registration, no automatic verification', received_at: d.receivedAt });
                 await insert(c, 'synapse_gateway.document_bytes', { version_id: version, case_id: d.linkedCaseId, bytes: file.bytes });
+                if(file.scan==='CLEAN'){const original=(await c.query("SELECT provider_scan_id,sha256,byte_size,verdict,engine,engine_version,scanned_at FROM synapse_gateway.scanner_results WHERE gmail_attachment_id=$1 AND sha256=$2 AND verdict='CLEAN' ORDER BY recorded_at DESC LIMIT 1",[file.id,file.sha256])).rows[0];if(!original)throw new PlatformError(409,'scan_provenance_required','Scan the original email attachment before registration.');await insert(c,'synapse_gateway.scanner_results',{id:randomUUID(),document_version_id:version,gmail_attachment_id:null,actor_id:actor,...original});}
             }
         }
         if (!prior || prior.language !== d.language || prior.institutionId !== d.institutionId) {
@@ -114,6 +116,7 @@ export async function persistCanonicalState(c: PoolClient, before: State, s: Sta
         else
             await insert(c, 'synapse.case_relationships', { case_relationship_id: r.id, source_case_id: r.sourceId, target_case_id: r.targetId, relationship_type: r.type, proposed_by_user_id: actor, ...fields });
     }
+    const accessDecisions:State['accessRequests']=[];
     for (const r of s.accessRequests) {
         const prior = before.accessRequests.find(v => v.id === r.id);
         if (!changed(prior, r))
@@ -124,8 +127,9 @@ export async function persistCanonicalState(c: PoolClient, before: State, s: Sta
         else
             await insert(c, 'synapse.case_access_requests', { case_access_request_id: r.id, case_id: r.caseId, requester_user_id: r.requesterId, requested_scope: r.scope, reason: r.reason, expires_at: r.until, ...fields });
         if (prior && r.status !== 'PENDING')
-            await insert(c, 'synapse.case_access_grant_approvals', { case_access_grant_approval_id: randomUUID(), case_access_request_id: r.id, case_id: r.caseId, approver_user_id: actor, approving_bureau_id: s.cases.find(v => v.id === r.caseId)!.bureauId, decision: r.status, decision_reason: reason, decided_at: now });
+            accessDecisions.push(r);
     }
+    if(s.grants.some(g=>!before.grants.some(v=>JSON.stringify(v)===JSON.stringify(g))))await c.query("SELECT set_config('synapse.access_grant_workflow','APPROVE_REQUEST',true)");
     for (const g of s.grants) {
         const prior = before.grants.find(v => v.caseId === g.caseId && v.userId === g.userId && v.scope === g.scope && v.until === g.until);
         if (!changed(prior, g))
@@ -138,6 +142,8 @@ export async function persistCanonicalState(c: PoolClient, before: State, s: Sta
         else
             await insert(c, 'synapse.case_access_grants', { case_access_grant_id: randomUUID(), case_id: g.caseId, user_id: g.userId, granted_scope: g.scope, granted_by_user_id: actor, source_request_id: s.accessRequests.find(r => r.caseId === g.caseId && r.requesterId === g.userId && r.scope === g.scope && r.status === 'APPROVED')?.id ?? null, valid_from: now, valid_until: g.until });
     }
+    for(const r of accessDecisions){const grant=r.status==='APPROVED'?(await c.query('SELECT case_access_grant_id FROM synapse.case_access_grants WHERE source_request_id=$1 AND revoked_at IS NULL ORDER BY valid_from DESC LIMIT 1',[r.id])).rows[0]?.case_access_grant_id:null;if(r.status==='APPROVED'&&!grant)throw Error('APPROVED_GRANT_REQUIRED');await insert(c,'synapse.case_access_grant_approvals',{case_access_grant_approval_id:randomUUID(),case_access_request_id:r.id,case_id:r.caseId,grant_id:grant,approver_user_id:actor,approving_bureau_id:s.cases.find(v=>v.id===r.caseId)!.bureauId,decision:r.status,decision_reason:reason,decided_at:now});}
+    await c.query("SELECT set_config('synapse.access_grant_workflow','',true)");
     for (const t of s.transfers) {
         const prior = before.transfers.find(v => v.id === t.id);
         if (!changed(prior, t))
@@ -213,7 +219,7 @@ export async function persistCanonicalState(c: PoolClient, before: State, s: Sta
     for (const t of s.translations ?? []) {
         const prior = before.translations?.find(v => v.id === t.id);
         if (prior && changed(prior, t))
-            await update(c, 'synapse.submission_translations', 'translation_id', t.id, { translated_subject: t.subject, translated_body: t.body, reviewed_by_user_id: t.correctedBy, reviewed_at: now, provenance: JSON.stringify({ reviewReason: t.reason, machineSubject: t.machineSubject ?? prior.subject, machineBody: t.machineBody ?? prior.body, originalProvider: t.provider }) });
+            await update(c, 'synapse.submission_translations', 'translation_id', t.id, { translated_subject: t.subject, translated_body: t.body, review_state:t.reviewStatus??'NEEDS_REVIEW', reviewed_by_user_id: t.correctedBy, reviewed_at: now, provenance: JSON.stringify({ reviewReason: t.reason, machineSubject: t.machineSubject ?? prior.subject, machineBody: t.machineBody ?? prior.body, originalProvider: t.provider }) });
     }
     for (const m of s.matches) {
         const prior = before.matches.find(v => v.id === m.id);

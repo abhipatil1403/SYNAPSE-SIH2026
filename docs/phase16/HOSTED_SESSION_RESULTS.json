@@ -1,0 +1,71 @@
+{
+  "checkedAt": "2026-10-27T20:27:28.348Z",
+  "environment": "Actual hosted Supabase Auth / approved current development account vault",
+  "browserAutomation": false,
+  "directRpcExplanation": "Both legacy case RPCs stay ACL-closed before and after logout. This is not proof of safe reopened public RPCs; none are reopened.",
+  "providerMocked": false,
+  "managedSchemaModified": false,
+  "businessGateChanged": false,
+  "businessRecordsWritten": false,
+  "onlyNewTestSessionsLoggedOut": true,
+  "results": [
+    {
+      "account": 1,
+      "login": true,
+      "directRpcBeforeLogoutHttp": [
+        403,
+        403
+      ],
+      "directRpcAfterLogoutHttp": [
+        403,
+        403
+      ],
+      "actualIssuedJwt": true,
+      "currentRefreshVerified": true,
+      "onlineSubjectVerified": true,
+      "providerLogout": true,
+      "unchangedJwtUserEndpointHttp": 403,
+      "revokedRefreshHttp": 400,
+      "strictApplicationSessionReplayDenied": true
+    },
+    {
+      "account": 2,
+      "login": true,
+      "directRpcBeforeLogoutHttp": [
+        403,
+        403
+      ],
+      "directRpcAfterLogoutHttp": [
+        403,
+        403
+      ],
+      "actualIssuedJwt": true,
+      "currentRefreshVerified": true,
+      "onlineSubjectVerified": true,
+      "providerLogout": true,
+      "unchangedJwtUserEndpointHttp": 403,
+      "revokedRefreshHttp": 400,
+      "strictApplicationSessionReplayDenied": true
+    },
+    {
+      "account": 3,
+      "login": true,
+      "directRpcBeforeLogoutHttp": [
+        403,
+        403
+      ],
+      "directRpcAfterLogoutHttp": [
+        403,
+        403
+      ],
+      "actualIssuedJwt": true,
+      "currentRefreshVerified": true,
+      "onlineSubjectVerified": true,
+      "providerLogout": true,
+      "unchangedJwtUserEndpointHttp": 403,
+      "revokedRefreshHttp": 400,
+      "strictApplicationSessionReplayDenied": true
+    }
+  ],
+  "allPassed": true
+}

@@ -27,6 +27,7 @@ jobs:
       - run: npm ci
       - run: npm run baseline:check
       - run: npm test
+      - run: npm run test:scanner
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

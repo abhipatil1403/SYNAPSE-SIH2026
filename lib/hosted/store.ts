@@ -1,3 +1,4 @@
+import {IntegrationError} from '../automation/providers';
 import type { Pool, PoolClient } from 'pg';
 import type { TransactionStore } from '../platform/engine';
 import { PlatformError, type State, type Principal, type Command } from '../platform/contracts';
@@ -27,7 +28,7 @@ export class CanonicalStore implements TransactionStore {
         }
         catch (error) {
             await c.query('ROLLBACK').catch(() => { broken = true; });
-            if (error instanceof PlatformError)
+            if (error instanceof PlatformError || error instanceof IntegrationError)
                 throw error;
             const code = (error as {
                 code?: string;

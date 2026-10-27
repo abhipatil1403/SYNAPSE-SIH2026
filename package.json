@@ -35,7 +35,8 @@
     "phase2:provision:check": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase2/provision.mjs",
     "phase2:test:auth": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase2/verify-auth.mjs",
     "test:database:operations": "node --import tsx scripts/test-database.mjs --operations",
-    "test:http:gmail": "node scripts/phase14/test-http.mjs"
+    "test:http:gmail": "node scripts/phase14/test-http.mjs",
+    "test:scanner": "node --test services/scanner/server.test.mjs"
   },
   "dependencies": {
     "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
