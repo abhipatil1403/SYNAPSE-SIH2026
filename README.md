@@ -2,6 +2,8 @@
 
 The original Fernly-inspired dashboard now uses authenticated server requests and persistent PostgreSQL. Supabase supplies real email/password authentication and approved officer identity. Operational development data uses a separate loopback PostgreSQL database; hosted Live Mode and hosted business writes remain disabled.
 
+For cloud deployment, read the [Vercel setup guide](docs/deployment/VERCEL.md). Current Vercel support is an authentication preview: the operational dashboard still requires a reviewed hosted backend, not the local-only workbench connection.
+
 Start at **http://localhost:3000/login**. An active approved officer enters `/dashboard`; pending or revoked authority goes to `/pending-approval`. The Development System Administrator uses **Audit & Administration → User Approvals** at `/admin`. A System Administrator has configuration authority without blanket complaint access.
 
 ## Run

@@ -1,6 +1,6 @@
 import "server-only";
 import { Pool } from "pg";
-import { readFileSync } from "node:fs";
+import { gatewayCa } from "./gateway-ca";
 import { createHmac } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { Phase1Error } from "../live/service";
@@ -8,13 +8,13 @@ import { Phase1Error } from "../live/service";
 let pool: Pool | undefined;
 function database() {
   if (pool) return pool;
-  const connection = process.env.SYNAPSE_GATEWAY_DATABASE_URL, caFile = process.env.SYNAPSE_GATEWAY_CA_FILE;
-  if (!connection || !caFile) throw new Phase1Error(503, "gateway_unavailable", "Officer access is awaiting secure gateway configuration.");
+  const connection = process.env.SYNAPSE_GATEWAY_DATABASE_URL;
+  if (!connection) throw new Phase1Error(503, "gateway_unavailable", "Officer access is awaiting secure gateway configuration.");
   const url = new URL(connection);
   if (url.protocol !== "postgresql:" || url.search || !url.username.startsWith("synapse_web_login") ||
     !/^(?:db\.xjnukuerzlrxjjqwmgkn\.supabase\.co|aws-[a-z0-9-]+\.pooler\.supabase\.com)$/.test(url.hostname))
     throw new Phase1Error(503, "gateway_unavailable", "The officer gateway configuration could not be verified.");
-  pool = new Pool({ connectionString: connection, ssl: { ca: readFileSync(caFile, "utf8"), rejectUnauthorized: true, servername: url.hostname },
+  pool = new Pool({ connectionString: connection, ssl: { ca: gatewayCa(), rejectUnauthorized: true, servername: url.hostname },
     max: 5, idleTimeoutMillis: 10000, connectionTimeoutMillis: 10000, statement_timeout: 5000 });
   pool.on("error", () => { /* No URL/provider/user material is written to logs. */ });
   return pool;
