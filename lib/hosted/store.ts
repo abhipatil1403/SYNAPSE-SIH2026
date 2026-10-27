@@ -10,19 +10,26 @@ export class CanonicalStore implements TransactionStore {
     async locked<T>(work: (c: PoolClient) => Promise<T>, writing = Boolean(this.command)) {
         const c = await this.pool.connect();
         let broken = false;
+        let stage = "begin";
         try {
             await c.query('BEGIN');
+            stage='role';
             await c.query('SET LOCAL ROLE synapse_operations_runtime');
             await c.query('SET LOCAL jit=off');
             await c.query("SELECT set_config('request.jwt.claims',$1,true),set_config('synapse.user_id',$2,true)", [JSON.stringify(this.claims), this.principal.userId]);
+            stage="lock";
             await c.query("SELECT pg_advisory_xact_lock(7319,26264)");
+            stage='release_control';
             const control = (await c.query('SELECT enabled,writes_enabled,revision::text FROM synapse_gateway.operations_control WHERE singleton')).rows[0];
             if (!control?.enabled || writing && !control.writes_enabled)
                 throw new PlatformError(503, 'operations_release_required', 'The database deployment has not completed its authorized release checks.');
+            stage='actor';
             const actor = (await c.query('SELECT synapse_gateway.ops_actor() actor')).rows[0].actor;
             if (actor !== this.principal.userId)
                 throw new PlatformError(403, 'current_approval_required', 'Current account approval and active role membership are required.');
+            stage='authorized_work';
             const result = await work(c);
+            stage='commit';
             await c.query('COMMIT');
             return result;
         }
@@ -33,7 +40,11 @@ export class CanonicalStore implements TransactionStore {
             const code = (error as {
                 code?: string;
             }).code;
-            this.diagnostic?.(error);
+            if(this.diagnostic)this.diagnostic(error);
+            else {
+                // Fixed categories only: never log SQL, parameter values, claims, filenames or provider messages.
+                console.error(JSON.stringify({event:'canonical_operation_failure',stage,code:typeof code==='string'&&/^[A-Z0-9]{5}$/.test(code)?code:'internal',kind:error instanceof Error?error.name:'UnknownError'}));
+            }
             if (code === '28000')
                 throw new PlatformError(401, 'session_required', 'Your session is no longer active. Sign in again.');
             if (code === '42501')
