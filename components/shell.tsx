@@ -141,7 +141,7 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", key);
   }, []);
   const signOut=async()=>{setSessionError('');try{const r=await fetch('/api/auth/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});if(!r.ok){setSessionError('Sign-out could not be confirmed. Retry while connected.');return;}const c=new BroadcastChannel('synapse-auth-session');c.postMessage('signed-out');c.close();window.location.replace('/login');}catch{setSessionError('Sign-out could not be confirmed. Check your connection and retry.');}};
-  if(!snapshot?.me)return <main className="boot"><div className="brand-mark"><Network/></div><h1>SYNAPSE</h1><p role="status">{status==='error'?message:'Loading your authorized workspace…'}</p>{status==='error'&&<><button className="btn" onClick={()=>void load()}>Retry connection</button><Link href="/login">Sign in</Link><button className="btn" onClick={()=>void signOut()}>Sign out</button>{sessionError&&<p role="alert">{sessionError}</p>}</>}</main>;
+  if(!snapshot?.me)return <main className="boot"><div className="brand-mark"><Network/></div><h1>SYNAPSE</h1><p role="status">{status==='error'?message:'Loading your authorized workspace…'}</p>{status==='error'&&<><button className="btn" onClick={()=>void load()}>Retry connection</button><Link prefetch={false} href="/login">Sign in</Link><button className="btn" onClick={()=>void signOut()}>Sign out</button>{sessionError&&<p role="alert">{sessionError}</p>}</>}</main>;
   const {cases,tasks,findings}=snapshot,me=snapshot.me;
   const actor={name:me.name,role:me.roles.map(code=>liveRoleLabels[code as keyof typeof liveRoleLabels]??code).join(' · '),bureau:me.bureauIds.map(id=>snapshot.bureaus.find(b=>b.id===id)?.name??id).join(', ')};
   const isAdmin=me.roles.includes('SYSTEM_ADMIN');
@@ -175,7 +175,7 @@ export function Shell({ children }: { children: ReactNode }) {
         aria-hidden={mobile && !drawer ? true : undefined}
         inert={mobile && !drawer}
       >
-        <Link
+        <Link prefetch={false}
           href="/dashboard"
           className="brand"
           onClick={() => setDrawer(false)}
@@ -209,7 +209,7 @@ export function Shell({ children }: { children: ReactNode }) {
                     isAdmin,
                 )
                 .map(([route, label, Icon]) => (
-                  <Link
+                  <Link prefetch={false}
                     key={route}
                     href={`/${route}`}
                     onClick={() => setDrawer(false)}
@@ -245,7 +245,7 @@ export function Shell({ children }: { children: ReactNode }) {
               <br />
               meaningful resolution.
             </p>
-            <Link href="/help" className="btn light">
+            <Link prefetch={false} href="/help" className="btn light">
               Workspace guide <ArrowUpRight size={14} />
             </Link>
           </div>
@@ -322,7 +322,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 </button>
               </div>
               {alerts.map((c) => (
-                <Link
+                <Link prefetch={false}
                   key={c.id}
                   href={c.caseId?`/complaints/${c.caseId}`:"/notifications"}
                   onClick={() => setNotifications(false)}
@@ -351,7 +351,7 @@ export function Shell({ children }: { children: ReactNode }) {
               </p>
               <Badge tone="green">Verified account</Badge><button className="menu-link" onClick={()=>void signOut()}>Sign out</button>
               {sessionError&&<p role="alert">{sessionError}</p>}
-              <Link
+              <Link prefetch={false}
                 className="menu-link"
                 href="/settings"
                 onClick={() => setUserMenu(false)}
@@ -359,7 +359,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 <Settings2 size={16} />
                 Profile & preferences
               </Link>
-              <Link
+              <Link prefetch={false}
                 className="menu-link"
                 href="/help"
                 onClick={() => setUserMenu(false)}

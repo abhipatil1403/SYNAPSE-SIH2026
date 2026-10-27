@@ -8,6 +8,6 @@ export function hostedReadPreviewAllowed(authId:string,enabled:string|undefined,
 export function accountWorkspaceSnapshot(profile:Staff){
  const me={id:profile.id,name:profile.name,bureauIds:[...new Set(profile.memberships.map(m=>m.bureauId))],roles:[...new Set(profile.roles.map(r=>r.code))]};
  return snapshotSchema.parse({revision:String(Date.now()),generatedAt:new Date().toISOString(),me,directory:[me],
-  workspace:{mode:'ACCOUNT_ONLY',sources:[],reason:'Your approved account is connected. Complaint preview requires an explicitly allowed account and an approved, expiring read lease.'},
+  workspace:{mode:'ACCOUNT_ONLY',sources:[],reason:'Your account is approved. Complaint data is awaiting access approval. Your profile and account settings are available.'},
   cases:[],drafts:[],tasks:[],evidence:[],matches:[],relationships:[],findings:[],policies:[],bureaus:[],institutions:[],categories:[],comments:[],activity:[],sla:[],events:[],notifications:[],accessRequests:[],transfers:[]});
 }

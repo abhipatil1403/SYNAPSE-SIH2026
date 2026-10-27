@@ -915,3 +915,6 @@
     height: 42px;
   }
 }
+
+/* Keep the original bento composition while business data is unavailable. */
+.account-access-notice{display:flex;align-items:flex-start;gap:12px;margin-bottom:18px;padding:16px 18px;border:1px solid #d7e4da;border-radius:16px;background:#edf5ef;color:#264e37}.account-access-notice svg{flex-shrink:0;margin-top:2px}.account-access-notice h2{font-size:14px;margin:0}.account-access-notice p{font-size:13px;line-height:1.6;margin:4px 0 0}.account-chart-unavailable{min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#6b7d70;text-align:center}.account-chart-unavailable strong{font-size:16px;color:#234f35}.account-chart-unavailable p{font-size:13px;margin:0;max-width:300px;line-height:1.6}.account-progress-unavailable{max-width:280px;margin:0 auto;text-align:center}.account-progress-unavailable svg{display:block;width:100%;height:auto}.account-progress-unavailable p{font-size:13px;color:#6b7d70;margin:0 0 12px}.account-overview .metric strong{font-variant-numeric:normal}
