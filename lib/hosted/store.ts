@@ -12,13 +12,16 @@ export class CanonicalStore implements TransactionStore {
         let broken = false;
         let stage = "begin";
         try {
-            await c.query('BEGIN');
+            // MVCC keeps a read projection consistent without serializing dashboard reads behind writes.
+            await c.query(writing ? 'BEGIN' : 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
             stage='role';
             await c.query('SET LOCAL ROLE synapse_operations_runtime');
             await c.query('SET LOCAL jit=off');
             await c.query("SELECT set_config('request.jwt.claims',$1,true),set_config('synapse.user_id',$2,true)", [JSON.stringify(this.claims), this.principal.userId]);
-            stage="lock";
-            await c.query("SELECT pg_advisory_xact_lock(7319,26264)");
+            if(writing){
+                stage="lock";
+                await c.query("SELECT pg_advisory_xact_lock(7319,26264)");
+            }
             stage='release_control';
             const control = (await c.query('SELECT enabled,writes_enabled,revision::text FROM synapse_gateway.operations_control WHERE singleton')).rows[0];
             if (!control?.enabled || writing && !control.writes_enabled)

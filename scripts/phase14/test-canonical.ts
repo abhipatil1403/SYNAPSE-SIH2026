@@ -42,6 +42,14 @@ export async function verifyCanonicalOperations(db: Client, url: string) {
     try {
         await assert.rejects(snapshot(), { code: 'operations_release_required' });
         await db.query("UPDATE synapse_gateway.operations_control SET enabled=true,writes_enabled=true,approved_by=$1,approved_at=now(),release_review='Synthetic disposable authorization test; never deployed activation'", [users[4]]);
+        // A held write lock must not block consistent read-only dashboards.
+        const writer=await pool.connect();let deadline:ReturnType<typeof setTimeout>|undefined;
+        try{
+            await writer.query('BEGIN');await writer.query('SET LOCAL ROLE synapse_operations_runtime');
+            await writer.query('SELECT pg_advisory_xact_lock(7319,26264)');
+            const read=await Promise.race([snapshot(),new Promise<never>((_,reject)=>{deadline=setTimeout(()=>reject(Error('READ_BLOCKED_BY_WRITE_LOCK')),3000);})]);
+            assert.equal(read.cases.length,0);
+        }finally{if(deadline)clearTimeout(deadline);await writer.query('ROLLBACK');writer.release();}
         assert.equal((await snapshot()).cases.length, 0);
         const institution = await send({ type: 'institution.create', permanentId: 'CANONICAL-TEST', name: 'Synthetic persisted institution', state: 'Test state', region: 'Test region' });
         const category = await send({ type: 'category.create', name: 'Synthetic canonical category' }, 4);
