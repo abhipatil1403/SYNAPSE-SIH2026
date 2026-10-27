@@ -23,3 +23,12 @@ The proxy now classifies an explicit current-approval 403 separately from servic
 Reproduce the account UI checks after `npm run build` with `node scripts/phase11/test-browser.mjs`; source and fixtures are explicitly separated from the actual-account results. User manual acceptance remains **AWAITING USER MANUAL TESTING**.
 
 The follow-up uses the same existing restricted Supabase login through its verified shared transaction pooler. All twelve actual-issued-JWT hosted checks passed again through that endpoint, including self-revocation rejection. No new database, connection-limit increase, permission change or business activation was introduced. Dependency audit passes after a scoped patched-Zod override for the new Vercel lifecycle helper.
+
+
+## Deployed acceptance
+
+Application commit `e479771c71972d90864c00c4d1f80e26b76c1dca` passed both GitHub CI runs (including all four PostgreSQL authorization/workflow suites), GitGuardian and Vercel. The owner-reported public origin passed the actual browser check: four visible unknown-value cards, month/Today navigation, full calendar navigation, Intake RSC/navigation 200, mobile without overflow, zero automatic protected-route prefetches and no unexpected 503s observed. Public signup/recovery link prefetches are separately recorded and are not protected-route requests. Evidence: [DEPLOYED_BROWSER_EVIDENCE.json](DEPLOYED_BROWSER_EVIDENCE.json).
+
+All three approved accounts also passed actual HTTPS login/snapshot/profile 200, ACCOUNT_ONLY mode, Secure/HttpOnly/SameSite=Lax cookies, administrator approvals 200 versus officer 403, complaint commands 503, logout 200 and copied-cookie replay 401. Evidence: [DEPLOYED_HTTP_EVIDENCE.json](DEPLOYED_HTTP_EVIDENCE.json). The command 503 is the expected disabled-write response; these tests created no business records. Unavailability during the first public acceptance attempt was recorded and investigated before claiming this pass.
+
+Local source validation passed 127 unit tests, typecheck, lint, production build, six separate browser checks, twelve real-issued-JWT database checks through the transaction pooler, a zero-vulnerability dependency audit and a zero actual-secret match source/build/staged scan. This deployed browser check is additional to the six earlier browser checks. Human manual acceptance and the previously listed case-data/security activation prerequisites remain outstanding. Local frontend and worker were restarted after the production build; Demo Mode and the existing isolated workflows remain available.

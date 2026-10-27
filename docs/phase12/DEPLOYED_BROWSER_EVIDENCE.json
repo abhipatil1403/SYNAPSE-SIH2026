@@ -1,0 +1,28 @@
+{
+  "checkedAt": "2026-10-27T14:59:14.847Z",
+  "origin": "https://synapse-sih-2026.vercel.app",
+  "source": "Actual deployed HTTPS browser with approved officer credentials; no mocked API or local operational database",
+  "dashboardCardsVisible": true,
+  "unavailableMetricValues": [
+    "—",
+    "—",
+    "—",
+    "—"
+  ],
+  "snapshotHttp": 200,
+  "workspaceMode": "ACCOUNT_ONLY",
+  "initialAutomaticProtectedPrefetches": 0,
+  "observedPrefetchPaths": [
+    "/forgot-password",
+    "/signup"
+  ],
+  "dateOnlyCalendarWorks": true,
+  "intakeRscHttp": 200,
+  "intakeNavigationWorks": true,
+  "fullCalendarNavigationWorks": true,
+  "mobileNoOverflow": true,
+  "observed503Paths": [],
+  "businessWritesEnabled": false,
+  "manualAcceptance": "AWAITING USER MANUAL TESTING",
+  "applicationCommit": "e479771c71972d90864c00c4d1f80e26b76c1dca"
+}

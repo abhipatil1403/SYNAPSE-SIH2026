@@ -40,5 +40,7 @@
   "authSessionRecordsChangedByIdleDrain": false,
   "activationChanged": false,
   "historicalUndiagnosed503Cause": "NOT INDEPENDENTLY ESTABLISHED",
-  "publicBrowserAcceptance": "PENDING FINAL DEPLOYMENT"
+  "publicBrowserAcceptance": "PASS: DEPLOYED_BROWSER_EVIDENCE.json",
+  "publicThreeAccountHttpAcceptance": "PASS: DEPLOYED_HTTP_EVIDENCE.json",
+  "applicationCommit": "e479771c71972d90864c00c4d1f80e26b76c1dca"
 }
