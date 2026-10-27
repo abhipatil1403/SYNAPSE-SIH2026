@@ -1,4 +1,5 @@
 import "server-only";
+import {hostedOperationalServer} from "../hosted/server";
 import { NextRequest, NextResponse } from "next/server";
 import { phase1Context } from "../live/server";
 import { activation, SupabasePlatformRepository, PlatformQueries, type AuthenticatedRpcTransport } from "./repository";
@@ -17,6 +18,7 @@ type PlatformDatabase = { public: Omit<Phase1Database["public"], "Functions"> & 
 
 export function platformServer(request: NextRequest) {
   if (workbenchConfig()) return workbenchServer(request);
+  if(process.env.SYNAPSE_HOSTED_OPERATIONS_ENABLED==='true')return hostedOperationalServer(request);
   if (!activation.reads) return hostedReadonlyServer(request);
   const context = phase1Context(request);
   // Narrow declared pending RPC surface only; no service client or direct private tables.

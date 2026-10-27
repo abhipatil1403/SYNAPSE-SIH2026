@@ -88,3 +88,6 @@ export async function authReadiness() {
     return { checkedAt: new Date().toISOString(), checks, safeToActivateLive: false, businessWritesEnabled: false };
   } finally { connection.release(); }
 }
+
+/** Server-only shared pool. Callers must use explicit transactions and restricted roles. */
+export function privateGatewayPool(){return database();}

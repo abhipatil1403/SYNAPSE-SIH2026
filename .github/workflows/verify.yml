@@ -40,5 +40,7 @@ jobs:
       - run: npm run test:database:platform
       - run: npm run test:database:auth
       - run: npm run test:database:sla
+      - run: npm run test:database:operations
       - run: npm run test:database:workbench
       - run: npm run build
+      - run: npm run test:http:gmail

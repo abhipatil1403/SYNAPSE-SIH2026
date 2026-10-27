@@ -30,11 +30,12 @@ function reject(condition: unknown, code: string, message: string, status = 409)
   if (!condition) throw new PlatformError(status, code, message);
 }
 export function closureFingerprint(s: State, c: PlatformCase, policyId: string) {
+  const byId=<T extends {id:string}>(rows:T[])=>[...rows].sort((a,b)=>a.id.localeCompare(b.id));
   return createHash("sha256").update(JSON.stringify({ c, policy: s.policies.find((p) => p.id === policyId),
-    tasks: s.tasks.filter((t) => t.caseId === c.id), evidence: s.evidence.filter((e) => e.caseId === c.id),
-    relationships: s.relationships.filter((r) => r.sourceId === c.id || r.targetId === c.id),
-    dependencies: s.relationships.filter((r) => r.sourceId === c.id && r.type === "DEPENDS_ON").map((r) => s.cases.find((x) => x.id === r.targetId)),
-    findings: s.findings.filter((f) => f.caseIds.includes(c.id)), actions:s.actions?.filter(a=>a.caseId===c.id), conflicts:s.conflicts?.filter(f=>f.caseIds.includes(c.id)),
+    tasks: byId(s.tasks.filter((t) => t.caseId === c.id)), evidence: byId(s.evidence.filter((e) => e.caseId === c.id)),
+    relationships: byId(s.relationships.filter((r) => r.sourceId === c.id || r.targetId === c.id)),
+    dependencies: byId(s.cases.filter(x=>s.relationships.some(r=>r.sourceId===c.id&&r.type==="DEPENDS_ON"&&r.targetId===x.id))),
+    findings: byId(s.findings.filter((f) => f.caseIds.includes(c.id))), actions:byId(s.actions?.filter(a=>a.caseId===c.id)??[]), conflicts:byId(s.conflicts?.filter(f=>f.caseIds.includes(c.id))??[]),
   })).digest("hex");
 }
 function cycle(s: State, source: string, target: string) {

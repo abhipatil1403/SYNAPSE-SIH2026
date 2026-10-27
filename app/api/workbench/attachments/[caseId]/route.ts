@@ -1,3 +1,5 @@
+import {hostedAttachment} from '@/lib/hosted/attachments';
+import {workbenchConfig} from '@/lib/workbench/config';
 import {NextRequest,NextResponse} from 'next/server';
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
@@ -10,6 +12,7 @@ import {requireSameOrigin} from '@/lib/live/request';
 import {inspectAttachment,scanWithClamAv} from '@/lib/workbench/attachments';
 export const runtime='nodejs';
 export async function POST(request:NextRequest,{params}:{params:Promise<{caseId:string}>}){try{
+ if(!workbenchConfig())return await hostedAttachment(request,(await params).caseId,true);
  requireSameOrigin(request,process.env.SYNAPSE_APP_ORIGIN??'http://localhost:3000');const caseId=z.uuid().parse((await params).caseId),api=workbenchServer(request),r=await api.resolve();
  await r.store.locked(async c=>{const s=await r.store.load(c),u=s.staff.find(u=>u.id===r.principal.userId)!,record=requireCase(s,u,caseId,new Date().toISOString(),true);if(!canDocuments(s,u,record,new Date().toISOString()))throw new PlatformError(404,'not_found','Document scope unavailable.');});
  if(Number(request.headers.get('content-length')??0)>11*1024*1024)throw new PlatformError(413,'attachment_too_large','Maximum attachment size is 10 MB.');
@@ -24,7 +27,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{caseId:
   await c.query('INSERT INTO workbench.blobs(id,environment_id,case_id,version_id,name,media_type,sha256,bytes,scan,uploader_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[id,r.store.environmentId,caseId,versionId,inspection.name,inspection.mediaType,inspection.sha256,bytes,scan,r.principal.userId]);await r.store.save(c,before,s);
  });return api.respond({saved:true,id,scan,message:scan==='PENDING'?'Evidence retained in quarantine; download/verification blocked until a trusted scanner completes.':'Evidence bytes/hash and metadata committed.'},scan==='PENDING'?202:201);
  }catch(error){return platformFailure(error);}}
-export async function GET(request:NextRequest,{params}:{params:Promise<{caseId:string}>}){try{const caseId=z.uuid().parse((await params).caseId),id=z.uuid().parse(request.nextUrl.searchParams.get('id')),api=workbenchServer(request),r=await api.resolve();
+export async function GET(request:NextRequest,{params}:{params:Promise<{caseId:string}>}){try{if(!workbenchConfig())return await hostedAttachment(request,(await params).caseId);const caseId=z.uuid().parse((await params).caseId),id=z.uuid().parse(request.nextUrl.searchParams.get('id')),api=workbenchServer(request),r=await api.resolve();
  const blob=await r.store.locked(async(c)=>{const s=await r.store.load(c),u=s.staff.find(u=>u.id===r.principal.userId)!,record=requireCase(s,u,caseId,new Date().toISOString());if(!canDocuments(s,u,record,new Date().toISOString()))throw new PlatformError(404,'not_found','Document unavailable.');const row=(await c.query('SELECT bytes,name,media_type,scan FROM workbench.blobs WHERE environment_id=$1 AND id=$2 AND case_id=$3',[r.store.environmentId,id,caseId])).rows[0];if(!row||!(row.scan==='CLEAN'||row.scan==='NOT_REQUIRED'&&row.media_type==='text/plain'))throw new PlatformError(404,'not_found','Document unavailable or quarantined.');return row;});
  return api.context.apply(new NextResponse(new Uint8Array(blob.bytes),{headers:{'Content-Type':blob.media_type,'Content-Disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(blob.name),'X-Content-Type-Options':'nosniff','Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}}));
  }catch(error){return platformFailure(error);}}

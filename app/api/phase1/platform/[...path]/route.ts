@@ -26,8 +26,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 export async function POST(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   try {
-    // No request, environment or Demo actor can unlock live writes.
-    if (!activation.businessWrites && !workbenchConfig()) throw new PlatformError(503, "business_writes_locked", "Hosted business writes remain disabled; only an explicitly configured isolated development database accepts these commands.");
+    // The canonical adapter additionally enforces its independently approved database release gate and RLS.
+    if (!activation.businessWrites && !workbenchConfig() && process.env.SYNAPSE_HOSTED_OPERATIONS_ENABLED!=='true') throw new PlatformError(503, "business_writes_locked", "Hosted business writes remain disabled; only an explicitly configured isolated development database accepts these commands.");
     const { path } = await params;
     if (path.join("/") !== "commands") throw new PlatformError(404, "not_found", "Command route unavailable.");
     requireSameOrigin(request, process.env.SYNAPSE_APP_ORIGIN ?? "http://localhost:3000");
