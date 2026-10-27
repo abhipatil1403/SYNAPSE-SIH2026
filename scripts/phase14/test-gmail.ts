@@ -1,11 +1,19 @@
 import assert from 'node:assert/strict';
-import { randomUUID, createHash } from 'node:crypto';
+import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { Pool, type Client } from 'pg';
 export async function verifyGmailDatabase(db: Client, url: string, users: string[], auth: string[], sessions: string[], bureaus: string[]) {
     await db.query('CREATE ROLE synapse_gmail_test_login LOGIN NOINHERIT NOBYPASSRLS;GRANT synapse_web_gateway TO synapse_gmail_test_login WITH INHERIT FALSE,SET TRUE');
+    // Generated per disposable run; never a hosted or publicly usable credential.
+    const password = randomBytes(36).toString('hex');
+    await db.query("SELECT set_config('synapse_test.login_password',$1,false)", [password]);
+    try {
+        await db.query("DO $$ BEGIN EXECUTE format('ALTER ROLE synapse_gmail_test_login PASSWORD %L',current_setting('synapse_test.login_password')); END $$");
+    } finally {
+        await db.query("SELECT set_config('synapse_test.login_password','',false)");
+    }
     const connection = new URL(url);
     connection.username = 'synapse_gmail_test_login';
-    connection.password = '';
+    connection.password = password;
     const pool = new Pool({ connectionString: connection.href });
     const claims = (n = 4) => ({ sub: auth[n], session_id: sessions[n], role: 'authenticated', aud: 'authenticated', exp: Math.floor(Date.now() / 1000) + 3600 });
     async function call(op: string, input: unknown = {}, n = 4) { const c = await pool.connect(); try {

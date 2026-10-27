@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { Pool, type Client } from 'pg';
 import { CanonicalStore } from '../../lib/hosted/store';
 import { PlatformEngine } from '../../lib/platform/engine';
@@ -20,9 +20,17 @@ export async function verifyCanonicalOperations(db: Client, url: string) {
         await db.query("INSERT INTO synapse.user_role_assignments(user_id,role_id,scope_type,bureau_id,valid_from,valid_until) SELECT $1,role_id,$2,$3,now()-interval '1 day',now()+interval '1 day' FROM synapse.roles WHERE role_code=$4", [users[n], n === 4 ? 'GLOBAL' : 'BUREAU', n === 4 ? null : bureaus[b], roles[n]]);
     }
     await db.query("CREATE ROLE synapse_operations_test_login LOGIN NOINHERIT NOBYPASSRLS NOSUPERUSER NOCREATEDB NOCREATEROLE; GRANT synapse_operations_runtime TO synapse_operations_test_login WITH INHERIT FALSE,SET TRUE");
+    // Generated per disposable run; never a hosted or publicly usable credential.
+    const password = randomBytes(36).toString('hex');
+    await db.query("SELECT set_config('synapse_test.login_password',$1,false)", [password]);
+    try {
+        await db.query("DO $$ BEGIN EXECUTE format('ALTER ROLE synapse_operations_test_login PASSWORD %L',current_setting('synapse_test.login_password')); END $$");
+    } finally {
+        await db.query("SELECT set_config('synapse_test.login_password','',false)");
+    }
     const connection = new URL(url);
     connection.username = 'synapse_operations_test_login';
-    connection.password = '';
+    connection.password = password;
     const pool = new Pool({ connectionString: connection.href, max: 3, statement_timeout: 5000 });
     const p = (n = 0): Principal => ({ userId: users[n], authId: auth[n], sessionId: sid[n] }), claims = (n = 0) => ({ sub: auth[n], session_id: sid[n], role: 'authenticated', aud: 'authenticated', exp: Math.floor(Date.now() / 1000) + 3600 }), store = (n = 0) => new CanonicalStore(pool, p(n), claims(n), undefined, undefined, error => { const e = error as {
         code?: string;

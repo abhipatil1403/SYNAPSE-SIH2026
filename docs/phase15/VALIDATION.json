@@ -41,5 +41,15 @@
     "actualSecretMatches": 0,
     "approvedEmailMatches": 0,
     "privatePathsStaged": 0
+  },
+  "ciPortabilityFix": {
+    "verifiedAt": "2026-10-27T19:17:02.048143+00:00",
+    "cause": "CI PostgreSQL requires SCRAM but the two disposable role connection URLs had empty passwords.",
+    "fix": "Independent fresh random per-run password for each test-only login; parameterized session setting, SQL literal formatting, and prompt clearing. No credential persisted.",
+    "localDatabaseRetest": "PASS: entire canonical/Gmail disposable authorization suite after change",
+    "typecheck": "PASS",
+    "unitTests": 137,
+    "lint": "PASS",
+    "hostedPermissionChanges": false
   }
 }
