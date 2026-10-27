@@ -11,7 +11,7 @@ services:
     repo: https://github.com/abhipatil1403/SYNAPSE-SIH2026
     branch: feature/synapse-phase3-5-platform
     autoDeployTrigger: checksPass
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run start
     healthCheckPath: /api/health
     envVars:

@@ -20,7 +20,7 @@ Hosted workflow support is **not complete**: `lib/platform/repository.ts` has cl
 6. In Supabase **Authentication → URL Configuration**, set Site URL to the same HTTPS origin and allow `https://YOUR_SERVICE.onrender.com/auth/callback?flow=recovery`. Preserve the localhost recovery callback. Do not change Confirm Email, grants, assignments or RLS as part of deployment.
 7. Visit `/login`. Verify real login/logout, refresh, HTTPS cookie properties and recovery in the requesting browser. `/api/health` is liveness only. A 200 health response does not prove database/workflow availability.
 
-If creating a Web Service manually instead: choose **Node**, **Free**, the same repository/branch, repository-root working directory, build command `npm ci && npm run build`, start command `npm run start`, and health check `/api/health`. Set `NODE_VERSION=22`. Next.js already binds `0.0.0.0` and accepts Render's `PORT`; do not run `workbench:start` or a local database setup script on Render.
+If creating a Web Service manually instead: choose **Node**, **Free**, the same repository/branch, repository-root working directory, build command `npm ci --include=dev && npm run build`, start command `npm run start`, and health check `/api/health`. Render sets `NODE_ENV=production`; explicitly including development dependencies preserves the TypeScript and Tailwind build tools. Set `NODE_VERSION=22`. Next.js already binds `0.0.0.0` and accepts Render's `PORT`; do not run `workbench:start` or a local database setup script on Render.
 
 ## Environment values
 
