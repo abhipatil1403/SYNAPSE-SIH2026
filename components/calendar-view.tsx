@@ -6,7 +6,7 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
+} from "./symbols";
 import {
   addCalendarDays,
   calendarDayKey,
@@ -181,16 +181,19 @@ export function QuickCalendar({
   events,
   loading = false,
   error,
+  eventsUnavailable = false,
 }: {
   events: readonly CalendarEvent[];
   loading?: boolean;
   error?: string;
+  eventsUnavailable?: boolean;
 }) {
   const today = useTodayKey();
   const [month, setMonth] = useState(today.slice(0, 7));
   const [selected, setSelected] = useState(today);
-  const selectedEvents = eventsOnDay(events, selected);
-  const comingUp = events.filter((e) => e.key > selected).slice(0, 1);
+  const visibleEvents = eventsUnavailable ? [] : events;
+  const selectedEvents = eventsOnDay(visibleEvents, selected);
+  const comingUp = visibleEvents.filter((e) => e.key > selected).slice(0, 1);
   function navigate(offset: number) {
     const next = shiftCalendarMonth(month, offset);
     setMonth(next);
@@ -205,6 +208,7 @@ export function QuickCalendar({
           className="icon-link"
           aria-label="Open full calendar"
           href={`/calendar?date=${selected}`}
+          prefetch={false}
         >
           <ArrowUpRight size={18} />
         </Link>
@@ -249,7 +253,7 @@ export function QuickCalendar({
             month={month}
             today={today}
             selected={selected}
-            events={events}
+            events={visibleEvents}
             onSelect={setSelected}
             onMonthChange={setMonth}
             compact
@@ -283,7 +287,7 @@ export function QuickCalendar({
             aria-live="polite"
             aria-label="Selected day events"
           >
-            {selectedEvents.length ? (
+            {eventsUnavailable ? <p className="quick-agenda-empty">Case events are unavailable until complaint access is approved.</p> : selectedEvents.length ? (
               selectedEvents.map((event) => (
                 <AgendaEvent key={event.id} event={event} />
               ))
@@ -301,7 +305,7 @@ export function QuickCalendar({
               ))}
             </div>
           )}
-          <div className="quick-calendar-legend">
+          {!eventsUnavailable&&<div className="quick-calendar-legend">
             <span>
               <i />
               Due / follow-up
@@ -310,12 +314,13 @@ export function QuickCalendar({
               <i className="review" />
               Review
             </span>
-          </div>
+          </div>}
         </>
       )}
       <Link
         className="btn full quick-calendar-open"
         href={`/calendar?date=${selected}`}
+        prefetch={false}
       >
         <CalendarDays size={16} />
         Open Full Calendar

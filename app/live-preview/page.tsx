@@ -1,4 +1,2 @@
-import { LiveCaseRegistry } from "@/components/live-case-registry";
-export default function Page() {
-  return <LiveCaseRegistry />;
-}
+import {redirect} from 'next/navigation';
+export default function LegacyReadiness(){redirect('/settings');}

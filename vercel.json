@@ -1,0 +1,15 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/gmail",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/deadlines",
+      "schedule": "0 4 * * *"
+    }
+  ],
+  "regions": [
+    "bom1"
+  ]
+}

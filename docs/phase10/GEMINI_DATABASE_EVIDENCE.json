@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-10-27T11:21:49.532Z",
+  "source": "Actual Gemini network inference through real leased PostgreSQL queue; synthetic authorized development identity and fictional records, not a real mailbox or production complaint",
+  "actualProvider": true,
+  "actualPostgres": true,
+  "providerVersion": "Google Gemini/gemini-embedding-001/SEMANTIC_SIMILARITY/768",
+  "dimensions": 768,
+  "matchingCandidates": 2,
+  "sourceVectorAndModelPersisted": true,
+  "humanDecisionPersisted": true,
+  "noAutomaticMerge": true,
+  "qualityCalibration": "AWAITING USER MANUAL TESTING"
+}

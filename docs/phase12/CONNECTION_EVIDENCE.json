@@ -1,0 +1,46 @@
+{
+  "checkedAt": "2026-10-27T14:51:51.183067+00:00",
+  "projectRef": "xjnukuerzlrxjjqwmgkn",
+  "source": "Actual restricted runtime connection probe, deployed proxy categories and hosted operator catalogs; no provider mocks",
+  "failure": {
+    "runtimeSqlstate": "53300",
+    "knownCondition": "too many connections for role",
+    "proxyCategory": "gateway_connection_unavailable",
+    "roleConnectionLimit": 10,
+    "idleSupavisorConnections": 10
+  },
+  "reviewedIdleDrain": {
+    "role": "synapse_web_login",
+    "applicationName": "Supavisor",
+    "state": "idle",
+    "minimumIdleSeconds": 120,
+    "openTransactionRequired": false,
+    "excludeOperatorBackend": true,
+    "eligible": 10,
+    "terminated": 10
+  },
+  "transactionPoolProbe": {
+    "host": "aws-0-ap-south-1.pooler.supabase.com",
+    "port": 6543,
+    "tlsCaAndHostnameVerified": true,
+    "runtimeRole": "synapse_web_gateway",
+    "rowSecurity": "on",
+    "roleResetAfterCommit": true
+  },
+  "subsequentCatalogIdleConnections": 1,
+  "hostedIssuedJwtChecks": {
+    "passed": 12,
+    "evidence": "../phase11/HOSTED_DATABASE_EVIDENCE.json",
+    "directCaseRpcClosed": true,
+    "selfRevokedSessionRejected": true
+  },
+  "connectionLimitChanged": false,
+  "grantsChanged": false,
+  "businessRowsChanged": false,
+  "authSessionRecordsChangedByIdleDrain": false,
+  "activationChanged": false,
+  "historicalUndiagnosed503Cause": "NOT INDEPENDENTLY ESTABLISHED",
+  "publicBrowserAcceptance": "PASS: DEPLOYED_BROWSER_EVIDENCE.json",
+  "publicThreeAccountHttpAcceptance": "PASS: DEPLOYED_HTTP_EVIDENCE.json",
+  "applicationCommit": "e479771c71972d90864c00c4d1f80e26b76c1dca"
+}

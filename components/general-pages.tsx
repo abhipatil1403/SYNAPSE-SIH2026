@@ -1,4 +1,5 @@
 "use client";
+import {ActionForm} from "./feedback";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -17,7 +18,7 @@ import {
   ShieldCheck,
   Sparkles,
   UserRound,
-} from "lucide-react";
+} from "./symbols";
 import { officers, bureaus, createSeed } from "@/lib/seed";
 import type { Settings } from "@/lib/types";
 import { useDemo } from "./provider";
@@ -203,7 +204,7 @@ export function SettingsPage() {
           ))}
         </nav>
         <Card className="settings-form">
-          <form onSubmit={submit}>
+          <ActionForm onSubmit={submit}>
             <h2>{tab}</h2>
             <p className="section-description">
               {tab === "My Profile"
@@ -404,7 +405,7 @@ export function SettingsPage() {
                 </Button>
               </div>
             )}
-          </form>
+          </ActionForm>
         </Card>
       </div>
       {confirm && (

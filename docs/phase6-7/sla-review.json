@@ -1,0 +1,9 @@
+{
+  "file": "20261026163237_phase7_scoped_sla_worker.sql",
+  "sha256": "2ca6ce241b083be524b94cca2ed9dfa3a0ccd625e7e6b5b873d45c1e560bbf8c",
+  "status": "PREPARED_UNAPPLIED",
+  "hostedApplied": false,
+  "localPersistenceAndAuthorizationPassed": true,
+  "hostedSchedule": "NOT_PROVISIONED",
+  "activation": "BLOCKED: business writes and production worker approval remain off"
+}

@@ -1,0 +1,39 @@
+# Free web service only. Supabase remains the existing Auth/database provider.
+# This does not provision a database, worker, disk or paid Render service.
+# Hosted complaint workflows remain locked until their Supabase implementation
+# and authorization tests are reviewed; local Workbench access stays disabled.
+services:
+  - type: web
+    name: synapse-web
+    runtime: node
+    plan: free
+    region: singapore
+    repo: https://github.com/abhipatil1403/SYNAPSE-SIH2026
+    branch: feature/synapse-phase3-5-platform
+    autoDeployTrigger: checksPass
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://xjnukuerzlrxjjqwmgkn.supabase.co
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SYNAPSE_APP_ORIGIN
+        sync: false
+      - key: SYNAPSE_GATEWAY_DATABASE_URL
+        sync: false
+      - key: SYNAPSE_GATEWAY_CA_PEM
+        sync: false
+      - key: SYNAPSE_AUTH_RATE_SECRET
+        generateValue: true
+      - key: SYNAPSE_TRUST_PROXY
+        value: 'false'
+      - key: SYNAPSE_SIGNUP_ENABLED
+        value: 'false'
+      - key: SYNAPSE_PHASE1_READ_ENABLED
+        value: 'false'
+      - key: SYNAPSE_WORKBENCH_ENABLED
+        value: 'false'

@@ -1,0 +1,65 @@
+{
+  "checkedAt": "2026-10-27T10:39:14.694Z",
+  "source": "Actual issued Supabase JWT sessions and hosted authorization state; no synthetic claims or mocked Auth",
+  "checks": [
+    {
+      "id": "issued_jwt_current_approved_login",
+      "status": "PASS"
+    },
+    {
+      "id": "same_issued_session_suspension_denied",
+      "status": "PASS"
+    },
+    {
+      "id": "suspension_exact_state_restored",
+      "status": "PASS"
+    },
+    {
+      "id": "same_issued_session_role_revocation_denied",
+      "status": "PASS"
+    },
+    {
+      "id": "role_window_exactly_restored",
+      "status": "PASS"
+    },
+    {
+      "id": "self_service_role_injection_denied",
+      "status": "PASS"
+    },
+    {
+      "id": "officer_administrator_operation_denied",
+      "status": "PASS"
+    },
+    {
+      "id": "real_provider_refresh",
+      "status": "PASS"
+    },
+    {
+      "id": "logout_and_copied_prelogout_cookie_denied",
+      "status": "PASS"
+    },
+    {
+      "id": "approved_token_direct_case_rpcs_closed",
+      "status": "PASS"
+    },
+    {
+      "id": "provider_only_logout_replay_cannot_use_direct_read_rpcs",
+      "status": "PASS"
+    },
+    {
+      "id": "provider_only_logout_copied_ssr_cookie_denied",
+      "status": "PASS"
+    },
+    {
+      "id": "provider_rejects_invalid_token",
+      "status": "PASS"
+    },
+    {
+      "id": "final_exact_role_restoration_verified",
+      "status": "PASS"
+    }
+  ],
+  "naturalCurrentJwtExpiry": "NOT RETESTED: provider TTL was not altered; fresh expiry-only soak test remains a hosted release prerequisite",
+  "hostedBusinessWritesEnabled": false,
+  "liveActivation": false
+}

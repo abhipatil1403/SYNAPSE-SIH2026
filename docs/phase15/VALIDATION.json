@@ -1,0 +1,55 @@
+{
+  "checkedAt": "2026-10-27T18:40:11.871099+00:00",
+  "unitTests": {
+    "passed": 137,
+    "failed": 0,
+    "GoogleTransport": "mocked",
+    "providerClaims": "synthetic where used"
+  },
+  "databaseAuthorization": "PASS: actual disposable PostgreSQL with unprivileged runtime/gateway logins and synthetic claims; hash-bound report ../phase14/local-database-results.json",
+  "hostedMigration": "PASS: transactional dry run then reviewed application; all original source table counts/functions retained; MIGRATION_REVIEW.json",
+  "http": "PASS: five real Next production HTTP negative/disabled checks; synthetic configuration, no account login or Google request",
+  "typecheck": "PASS",
+  "lint": "PASS",
+  "productionBuild": "PASS: local optimized Next production build; exact-head GitHub/Vercel results checked in delivery",
+  "baseline": "PASS",
+  "translationCredential": {
+    "actualProviderRequest": true,
+    "provider": "Google Cloud Translation Basic v2",
+    "developmentSampleOnly": true,
+    "http": 200,
+    "translationReturned": true,
+    "notHostedQueueAcceptance": true
+  },
+  "browserAutomation": false,
+  "mailboxConsentPerformed": false,
+  "realEmailIngested": false,
+  "liveModeEnabled": false,
+  "businessWritesEnabled": false,
+  "remainingBlockers": [
+    "Dedicated-mailbox browser consent and actual email ingestion acceptance remain for user.",
+    "Independent issued-JWT and transactional/RLS release approval required before hosted operations activation.",
+    "Binary malware scanner not configured; affected files correctly remain quarantined.",
+    "Hosted semantic/translation processing and retry workflows still need production queue execution/acceptance; local workbench worker is not started in Vercel.",
+    "Metadata-only cross-Bureau discovery and scale/paging require further release work.",
+    "Google testing consent expiry/production restricted-scope verification and bounded daily scheduling require operational review."
+  ],
+  "hostedNegativeChecks": "PASS: actual deployed database with the restricted login; no supplied JWT, no impersonation or business mutation",
+  "secretScan": {
+    "filesScanned": 1195,
+    "stagedFilesChecked": 61,
+    "actualSecretMatches": 0,
+    "approvedEmailMatches": 0,
+    "privatePathsStaged": 0
+  },
+  "ciPortabilityFix": {
+    "verifiedAt": "2026-10-27T19:17:02.048143+00:00",
+    "cause": "CI PostgreSQL requires SCRAM but the two disposable role connection URLs had empty passwords.",
+    "fix": "Independent fresh random per-run password for each test-only login; parameterized session setting, SQL literal formatting, and prompt clearing. No credential persisted.",
+    "localDatabaseRetest": "PASS: entire canonical/Gmail disposable authorization suite after change",
+    "typecheck": "PASS",
+    "unitTests": 137,
+    "lint": "PASS",
+    "hostedPermissionChanges": false
+  }
+}

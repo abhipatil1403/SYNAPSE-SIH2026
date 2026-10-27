@@ -1,0 +1,45 @@
+{
+  "checkedAt": "2026-10-27T14:57:51.785Z",
+  "origin": "https://synapse-sih-2026.vercel.app",
+  "source": "Actual public HTTPS deployment and owner-approved real credentials; no mocked Auth or local business database",
+  "results": [
+    {
+      "slot": 0,
+      "loginHttp": 200,
+      "snapshotHttp": 200,
+      "mode": "ACCOUNT_ONLY",
+      "secureHttpOnlyLaxCookies": true,
+      "profileHttp": 200,
+      "approvalsHttp": 403,
+      "caseCommandHttp": 503,
+      "logoutHttp": 200,
+      "copiedCookieHttp": 401
+    },
+    {
+      "slot": 1,
+      "loginHttp": 200,
+      "snapshotHttp": 200,
+      "mode": "ACCOUNT_ONLY",
+      "secureHttpOnlyLaxCookies": true,
+      "profileHttp": 200,
+      "approvalsHttp": 403,
+      "caseCommandHttp": 503,
+      "logoutHttp": 200,
+      "copiedCookieHttp": 401
+    },
+    {
+      "slot": 2,
+      "loginHttp": 200,
+      "snapshotHttp": 200,
+      "mode": "ACCOUNT_ONLY",
+      "secureHttpOnlyLaxCookies": true,
+      "profileHttp": 200,
+      "approvalsHttp": 200,
+      "caseCommandHttp": 503,
+      "logoutHttp": 200,
+      "copiedCookieHttp": 401
+    }
+  ],
+  "manualUiAcceptance": "AWAITING USER MANUAL TESTING",
+  "applicationCommit": "e479771c71972d90864c00c4d1f80e26b76c1dca"
+}

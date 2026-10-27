@@ -1,0 +1,16 @@
+{
+  "checkedAt": "2026-10-27T20:37:31.164Z",
+  "server": "Next production build / real HTTP",
+  "authConfiguration": "synthetic project and publishable fixture; no session or provider JWT issued",
+  "googleConfiguration": "synthetic; no Google consent or mailbox request performed",
+  "browserAutomation": false,
+  "checks": [
+    "Real Next HTTP: cron rejects missing bearer",
+    "Real Next HTTP: authenticated disabled cron returns without ingestion",
+    "Real Next HTTP: invalid/missing cookie state rejected, secure cookie cleared, no OAuth code in redirect",
+    "Real Next HTTP: cross-origin OAuth start denied",
+    "Real Next HTTP: unauthenticated integration status denied",
+    "Real Next HTTP: deadline cron requires its bearer and cannot write when operations are disabled",
+    "Real Next HTTP: processing, scanner and reminder endpoints retain the disabled-release boundary; no fake success"
+  ]
+}

@@ -1,4 +1,5 @@
 "use client";
+import {ActionForm} from "./feedback";
 import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -19,7 +20,7 @@ import {
   ShieldCheck,
   Sparkles,
   X,
-} from "lucide-react";
+} from "./symbols";
 import { canApprove, canEdit, evaluateGate, humanize } from "@/lib/domain";
 import { linkTypes, type Finding, type GateEvaluation } from "@/lib/types";
 import { bureaus, officers } from "@/lib/seed";
@@ -220,7 +221,7 @@ export function Intelligence() {
           title={`${review.decision === "Confirmed" ? "Confirm" : review.decision === "Dismissed" ? "Dismiss" : "Investigate"} finding`}
           onClose={() => setReview(null)}
         >
-          <form onSubmit={submit} className="form-stack">
+          <ActionForm onSubmit={submit} className="form-stack">
             <p className="dialog-description">
               {review.finding.title}. This records your review of an advisory
               finding. Confirm any case relationship separately in Dependency
@@ -236,7 +237,7 @@ export function Intelligence() {
                 Record Review
               </Button>
             </div>
-          </form>
+          </ActionForm>
         </Modal>
       )}
     </>
@@ -443,7 +444,7 @@ export function Coordination() {
           }
           onClose={() => setDecision(null)}
         >
-          <form className="form-stack" onSubmit={submit}>
+          <ActionForm className="form-stack" onSubmit={submit}>
             <p className="dialog-description">
               A single demo command records the decision and updates the lead
               Bureau. Existing history and the SLA deadline are retained.
@@ -458,7 +459,7 @@ export function Coordination() {
                 Record Decision
               </Button>
             </div>
-          </form>
+          </ActionForm>
         </Modal>
       )}
     </>
@@ -799,7 +800,7 @@ export function Resolutions() {
       )}
       {approve && c && (
         <Modal title="Approve case disposal" onClose={() => setApprove(null)}>
-          <form className="form-stack" onSubmit={submit}>
+          <ActionForm className="form-stack" onSubmit={submit}>
             <div className="notice warning">
               <ShieldCheck size={17} />
               <p>
@@ -817,7 +818,7 @@ export function Resolutions() {
                 Confirm Disposal
               </Button>
             </div>
-          </form>
+          </ActionForm>
         </Modal>
       )}
     </>

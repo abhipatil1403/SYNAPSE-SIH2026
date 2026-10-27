@@ -1,0 +1,103 @@
+{
+  "checkedAt": "2026-10-27T20:23:44.376Z",
+  "migrations": [
+    {
+      "file": "20261027193348_phase16_processing_and_discovery.sql",
+      "sha256": "0dd2fea32e217ea5210185cec0463f68d6e69431b2ba0dfe5f0a10794ccb64f5"
+    },
+    {
+      "file": "20261027194500_phase16_private_attachment_scanning.sql",
+      "sha256": "fd05d4d5f591c64a6430198b6722bc812eca9c95231eb6f2649033c3437ec265"
+    },
+    {
+      "file": "20261027200002_phase16_hosted_deadline_notifications.sql",
+      "sha256": "be0dfa06e33904a2aa482cc82205002e7923a9c2b8bd8a1e49ff79e2aba2386f"
+    }
+  ],
+  "hostedApplied": true,
+  "transactionalDryRun": false,
+  "allOriginalTableCountsUnchanged": true,
+  "originalFunctionDefinitionsUnchanged": true,
+  "readLeaseUnchanged": true,
+  "operationsEnabled": false,
+  "businessWritesEnabled": false,
+  "oauthConnectionsCreated": 0,
+  "function": {
+    "owner": "synapse_gmail_manager",
+    "prosecdef": true,
+    "proconfig": [
+      "search_path=\"\"",
+      "row_security=on"
+    ],
+    "anon": false,
+    "authenticated": false,
+    "service": false,
+    "gateway": true
+  },
+  "helpers": [
+    {
+      "proname": "deadline_notifications",
+      "owner": "synapse_deadline_notifier",
+      "proconfig": [
+        "search_path=\"\"",
+        "row_security=on"
+      ],
+      "authenticated": false,
+      "anon": false,
+      "service": false
+    },
+    {
+      "proname": "ops_active_bureau",
+      "owner": "synapse_discovery_reader",
+      "proconfig": [
+        "search_path=\"\"",
+        "row_security=on"
+      ],
+      "authenticated": false,
+      "anon": false,
+      "service": false
+    },
+    {
+      "proname": "ops_discoverable",
+      "owner": "synapse_discovery_reader",
+      "proconfig": [
+        "search_path=\"\"",
+        "row_security=on"
+      ],
+      "authenticated": false,
+      "anon": false,
+      "service": false
+    },
+    {
+      "proname": "ops_discovery",
+      "owner": "synapse_discovery_reader",
+      "proconfig": [
+        "search_path=\"\"",
+        "row_security=on"
+      ],
+      "authenticated": false,
+      "anon": false,
+      "service": false
+    }
+  ],
+  "roles": [
+    {
+      "rolname": "synapse_deadline_notifier",
+      "safe": true
+    },
+    {
+      "rolname": "synapse_discovery_reader",
+      "safe": true
+    },
+    {
+      "rolname": "synapse_gmail_manager",
+      "safe": true
+    },
+    {
+      "rolname": "synapse_operations_runtime",
+      "safe": true
+    }
+  ],
+  "localEvidenceAt": "2026-10-27T20:22:36.405Z",
+  "scope": "Reviewed current workflow processing, metadata discovery, scanner provenance and deadline notifications; no account grants, managed Auth ownership changes, complaint mutation, mailbox read, public RPC reopening or release activation."
+}

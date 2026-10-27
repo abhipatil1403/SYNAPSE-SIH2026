@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-10-27T08:53:27.355Z",
+  "source": "Actual hosted database and issued-login checks; no provider mock",
+  "oldAuthAbsentVerified": true,
+  "newAuthConfirmed": true,
+  "retiredInternalHistoryRetained": true,
+  "newInternalIdentity": true,
+  "role": "CASE_OFFICER",
+  "approvedBureau": "Academic Bureau · Phase 2 development test",
+  "administratorApprovalAuditVerified": true,
+  "approval": "Completed independently outside the automated approval step; no duplicate approval submitted",
+  "pendingReadTest": "Recovery runner observed HTTP 403 before retirement; final original-dashboard browser tests are recorded separately",
+  "hostedBusinessWritesEnabled": false
+}

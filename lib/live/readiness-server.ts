@@ -1,6 +1,7 @@
 import "server-only";
 import { readFile } from "node:fs/promises";
 import { evaluateReadiness, type ReadinessCheck } from "./readiness";
+import { authReadiness } from "../auth/gateway";
 export async function currentReadiness() {
   const checkedAt = new Date();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -63,6 +64,16 @@ export async function currentReadiness() {
       source: "Current server environment",
     });
   const receipts: unknown[] = [];
+  if (process.env.SYNAPSE_GATEWAY_DATABASE_URL) {
+    try {
+      const gateway = await authReadiness();
+      const closed = gateway.checks.some((c) => c.id === "direct_rpc_closed" && c.status === "PASS");
+      const executed = ["hosted-auth", "web-auth"].every((id) => gateway.checks.some((c) => c.id === id && c.status === "PASS"));
+      checks.push({ id: "rpc_execution_grants", status: closed ? "pass" : "fail", detail: "Direct browser read execution is revoked; the restricted server gateway is required.", source: "Current hosted catalog" },
+        { id: "external_logout_session_invalidation", status: closed && executed ? "pass" : "blocked", detail: closed && executed ? "The application-owned gateway passed real provider-only logout and replay tests; browser JWTs cannot invoke protected direct reads." : "Current catalog and fresh issued-JWT/HTTP evidence are both required.", source: "Current catalog plus timestamped Phase 6–7 executed evidence" },
+        { id: "rpc_0029_review", status: "blocked", detail: "The application-owned gateway correction still needs independent release review. Historical failure is preserved in the Phase 2 report.", source: "No independent activation approval recorded" });
+    } catch { /* Existing evidence remains conservative if current verification fails. */ }
+  }
   for (const file of [
     "hosted-readiness.json",
     "session-readiness.json",

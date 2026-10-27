@@ -1,4 +1,6 @@
 "use client";
+import {Feedback} from "./feedback";
+import {ActionForm} from "./feedback";
 import {
   useCallback,
   useEffect,
@@ -16,7 +18,7 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
-} from "lucide-react";
+} from "./symbols";
 import {
   casePageSchema,
   identitySchema,
@@ -255,6 +257,7 @@ export function LiveCaseRegistry() {
           <ArrowLeft size={15} />
           Demo workspace
         </Link>
+        <Link href="/platform" className="btn">Platform workspace</Link>
       </header>
       <section className="live-preview-workspace">
         <LiveReadiness />
@@ -297,9 +300,9 @@ export function LiveCaseRegistry() {
             <ShieldCheck size={36} />
             <h2>Read-only preview is locked</h2>
             <p>{message}</p>
-            <p>The working Demo workspace remains available.</p>
+            <p>Your account workspace remains available.</p>
             <Link href="/dashboard" className="btn primary">
-              Open Demo workspace
+              Open workspace
               <ArrowRight size={15} />
             </Link>
           </div>
@@ -312,7 +315,7 @@ export function LiveCaseRegistry() {
               Access requires a provisioned Supabase account and approved case
               permissions.
             </p>
-            <form onSubmit={signIn} className="form-stack">
+            <ActionForm onSubmit={signIn} className="form-stack">
               <label>
                 Email
                 <input
@@ -333,16 +336,12 @@ export function LiveCaseRegistry() {
                   maxLength={1024}
                 />
               </label>
-              {message && (
-                <p role="alert" className="live-preview-error">
-                  {message}
-                </p>
-              )}
+              <Feedback message={message} tone="error"/>
               <button className="btn primary" disabled={busy}>
                 {busy ? "Signing in…" : "Sign in"}
                 <ArrowRight size={16} />
               </button>
-            </form>
+            </ActionForm>
           </div>
         )}
         {view === "error" && (
@@ -374,7 +373,7 @@ export function LiveCaseRegistry() {
                 Read access verified
               </span>
             </div>
-            <form className="live-registry-filters" onSubmit={submitFilters}>
+            <ActionForm className="live-registry-filters" onSubmit={submitFilters}>
               <label className="live-registry-search">
                 <span>Search cases</span>
                 <span>
@@ -437,7 +436,7 @@ export function LiveCaseRegistry() {
               <button type="submit" className="btn primary" disabled={busy}>
                 Apply filters
               </button>
-            </form>
+            </ActionForm>
             <div
               className="live-registry-table"
               tabIndex={0}

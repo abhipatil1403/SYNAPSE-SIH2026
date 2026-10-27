@@ -1,0 +1,8 @@
+{
+  "checkedAt": "2026-10-27T14:17:48.827Z",
+  "actualIssuedJwt": true,
+  "caseReadDenied": true,
+  "documentReadDenied": true,
+  "operationDenied": true,
+  "providerMocked": false
+}

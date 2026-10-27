@@ -1,6 +1,12 @@
 # Verified results — 26 October 2026
 
-## Phase 2 security sign-off — latest
+## Phase 3–5 gated milestone — latest
+
+**88/88 unit tests, 27/27 browser tests, 15/15 locked/provider HTTP checks, typecheck, lint, production build and baseline verification passed.** The disposable PostgreSQL suite passed the original 69 assertions, local simulated session-liveness candidate checks and five actual-table persisted-workflow scenario groups. Four new browser tests are explicitly **MOCKED** through the isolated engine, including verified intake registration → registry → dashboard. They are not hosted JWT/RLS/business-write proof.
+
+The new platform endpoints use the existing `/api/phase1` cookie scope and remain hard-gated. The owner-required session migration is prepared outside the applied chain, locally tested and **unapplied**. Managed advisor access returned with 3 definer, 7 mutable-search-path and leaked-password warnings; that is not security approval. Safe hosted reads reconfirmed original integrity and original expired-token rejection. Global Live Mode, persistent preview and business writes remain off. See [the milestone report](phase3-5/REPORT.md) and its feature readiness matrix for actual scope and GitHub evidence.
+
+## Phase 2 security sign-off — earlier
 
 Read [the complete security sign-off](phase2/SECURITY_SIGNOFF.md) for exact UTC timestamps and file changes. **Read-only activation: NO-GO. Phase 3 preparation: GO only for offline contracts/design/tests behind disabled gates.**
 

@@ -1,8 +1,15 @@
 import { Phase1Error } from "./service";
 
 export function requireSameOrigin(request: Request, expectedOrigin: string) {
+  let normalizedOrigin: string;
+  try {
+    const configured = new URL(expectedOrigin);
+    if (configured.username || configured.password || configured.search || configured.hash || configured.pathname !== "/" ||
+      configured.protocol !== "https:" && !(configured.protocol === "http:" && ["localhost", "127.0.0.1"].includes(configured.hostname))) throw Error("Invalid configured origin");
+    normalizedOrigin = configured.origin;
+  } catch { throw new Phase1Error(503, "origin_configuration_unavailable", "The application origin is not configured correctly."); }
   if (
-    request.headers.get("origin") !== expectedOrigin ||
+    request.headers.get("origin") !== normalizedOrigin ||
     request.headers.get("sec-fetch-site") === "cross-site"
   ) {
     throw new Phase1Error(

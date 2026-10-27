@@ -1,0 +1,1083 @@
+{
+  "migration": "20261027171357_phase14_canonical_operations.sql",
+  "reviewStatus": "Reviewed closed-gate additive setup; independent hosted activation remains required",
+  "sourcePrivileges": {
+    "users": {
+      "SELECT": [
+        "account_status",
+        "display_name",
+        "user_id"
+      ]
+    },
+    "auth_identity_links": {
+      "SELECT": [
+        "auth_user_id",
+        "internal_user_id",
+        "revoked_at"
+      ]
+    },
+    "user_bureau_memberships": {
+      "SELECT": [
+        "bureau_id",
+        "user_id",
+        "valid_from",
+        "valid_until"
+      ]
+    },
+    "user_role_assignments": {
+      "SELECT": [
+        "bureau_id",
+        "role_id",
+        "scope_type",
+        "user_id",
+        "valid_from",
+        "valid_until"
+      ]
+    },
+    "roles": {
+      "SELECT": [
+        "is_active",
+        "role_code",
+        "role_id"
+      ]
+    },
+    "bureaus": {
+      "SELECT": [
+        "bureau_id",
+        "bureau_name",
+        "is_active"
+      ]
+    },
+    "case_categories": {
+      "SELECT": [
+        "category_id",
+        "category_name",
+        "is_active"
+      ],
+      "INSERT": [
+        "category_code",
+        "category_id",
+        "category_name",
+        "is_active"
+      ]
+    },
+    "institutions": {
+      "SELECT": [
+        "address_line1",
+        "address_line2",
+        "canonical_name",
+        "city",
+        "country_code",
+        "created_at",
+        "district",
+        "institution_id",
+        "institution_status",
+        "institution_type",
+        "postal_code",
+        "region_id",
+        "region_label",
+        "row_version",
+        "source_record_id",
+        "source_system",
+        "state_name",
+        "updated_at"
+      ],
+      "INSERT": [
+        "canonical_name",
+        "institution_id",
+        "region_label",
+        "row_version",
+        "state_name",
+        "updated_at"
+      ],
+      "UPDATE": [
+        "canonical_name",
+        "region_label",
+        "row_version",
+        "state_name",
+        "updated_at"
+      ]
+    },
+    "institution_identifiers": {
+      "SELECT": [
+        "created_at",
+        "identifier_type",
+        "identifier_value",
+        "institution_id",
+        "institution_identifier_id",
+        "is_primary",
+        "issuing_authority",
+        "valid_from",
+        "valid_until"
+      ],
+      "INSERT": [
+        "identifier_type",
+        "identifier_value",
+        "institution_id",
+        "institution_identifier_id",
+        "is_primary",
+        "issuing_authority"
+      ]
+    },
+    "cases": {
+      "SELECT": [
+        "accountable_officer_id",
+        "campus_id",
+        "case_id",
+        "case_number",
+        "category_id",
+        "confidentiality_level",
+        "created_at",
+        "created_by_user_id",
+        "current_status_code",
+        "discoverable",
+        "disposed_at",
+        "institution_id",
+        "lead_bureau_id",
+        "opened_at",
+        "priority_code",
+        "received_at",
+        "row_version",
+        "summary",
+        "title",
+        "updated_at"
+      ],
+      "INSERT": [
+        "accountable_officer_id",
+        "case_id",
+        "case_number",
+        "category_id",
+        "created_by_user_id",
+        "current_status_code",
+        "discoverable",
+        "institution_id",
+        "lead_bureau_id",
+        "priority_code",
+        "received_at",
+        "summary",
+        "title"
+      ],
+      "UPDATE": [
+        "accountable_officer_id",
+        "current_status_code",
+        "discoverable",
+        "disposed_at",
+        "lead_bureau_id",
+        "priority_code",
+        "summary",
+        "title"
+      ]
+    },
+    "case_submissions": {
+      "SELECT": [
+        "category_hint",
+        "complainant_reference",
+        "course_hint",
+        "created_at",
+        "duplicate_of_submission_id",
+        "human_verified",
+        "inbound_message_id",
+        "institution_id",
+        "intake_bureau_id",
+        "issue_hint",
+        "original_body",
+        "original_language_code",
+        "original_subject",
+        "received_at",
+        "review_reason",
+        "reviewed_at",
+        "reviewed_by_user_id",
+        "row_version",
+        "source_reference",
+        "source_type",
+        "submission_id",
+        "submission_status",
+        "submitted_by_user_id"
+      ],
+      "INSERT": [
+        "category_hint",
+        "course_hint",
+        "human_verified",
+        "institution_id",
+        "intake_bureau_id",
+        "issue_hint",
+        "original_body",
+        "original_language_code",
+        "original_subject",
+        "received_at",
+        "review_reason",
+        "reviewed_at",
+        "reviewed_by_user_id",
+        "row_version",
+        "source_reference",
+        "source_type",
+        "submission_id",
+        "submission_status",
+        "submitted_by_user_id"
+      ],
+      "UPDATE": [
+        "category_hint",
+        "course_hint",
+        "human_verified",
+        "institution_id",
+        "issue_hint",
+        "original_language_code",
+        "review_reason",
+        "reviewed_at",
+        "reviewed_by_user_id",
+        "row_version",
+        "submission_status"
+      ]
+    },
+    "submission_case_links": {
+      "SELECT": [
+        "case_id",
+        "confirmed_at",
+        "confirmed_by_user_id",
+        "link_type",
+        "submission_id"
+      ],
+      "INSERT": [
+        "case_id",
+        "confirmed_at",
+        "confirmed_by_user_id",
+        "link_type",
+        "submission_id"
+      ]
+    },
+    "case_assignments": {
+      "SELECT": [
+        "assigned_by_user_id",
+        "assignment_role",
+        "bureau_id",
+        "case_assignment_id",
+        "case_id",
+        "created_at",
+        "officer_id",
+        "reason",
+        "valid_from",
+        "valid_until"
+      ]
+    },
+    "case_work_items": {
+      "SELECT": [
+        "assigned_to_user_id",
+        "bureau_id",
+        "case_id",
+        "completed_at",
+        "created_at",
+        "created_by_user_id",
+        "description",
+        "due_at",
+        "status_code",
+        "title",
+        "updated_at",
+        "work_item_id",
+        "work_item_type"
+      ],
+      "INSERT": [
+        "assigned_to_user_id",
+        "bureau_id",
+        "case_id",
+        "completed_at",
+        "created_by_user_id",
+        "due_at",
+        "status_code",
+        "title",
+        "updated_at",
+        "work_item_id",
+        "work_item_type"
+      ],
+      "UPDATE": [
+        "completed_at",
+        "due_at",
+        "status_code",
+        "title",
+        "updated_at"
+      ]
+    },
+    "case_comments": {
+      "SELECT": [
+        "author_user_id",
+        "case_comment_id",
+        "case_id",
+        "comment_body",
+        "created_at",
+        "edited_at",
+        "visibility",
+        "work_item_id"
+      ],
+      "INSERT": [
+        "author_user_id",
+        "case_comment_id",
+        "case_id",
+        "comment_body",
+        "created_at",
+        "visibility"
+      ]
+    },
+    "case_relationships": {
+      "SELECT": [
+        "case_relationship_id",
+        "created_at",
+        "proposed_by_user_id",
+        "rationale",
+        "relationship_status",
+        "relationship_type",
+        "reviewed_at",
+        "reviewed_by_user_id",
+        "source_case_id",
+        "source_conflict_finding_id",
+        "target_case_id"
+      ],
+      "INSERT": [
+        "case_relationship_id",
+        "proposed_by_user_id",
+        "rationale",
+        "relationship_status",
+        "relationship_type",
+        "reviewed_at",
+        "reviewed_by_user_id",
+        "source_case_id",
+        "target_case_id"
+      ],
+      "UPDATE": [
+        "rationale",
+        "relationship_status",
+        "reviewed_at",
+        "reviewed_by_user_id"
+      ]
+    },
+    "notifications": {
+      "SELECT": [
+        "body",
+        "created_at",
+        "notification_id",
+        "notification_type",
+        "read_at",
+        "recipient_user_id",
+        "related_case_id",
+        "subject"
+      ],
+      "INSERT": [
+        "body",
+        "created_at",
+        "notification_id",
+        "notification_type",
+        "read_at",
+        "recipient_user_id",
+        "related_case_id",
+        "subject"
+      ],
+      "UPDATE": [
+        "read_at"
+      ]
+    },
+    "audit_events": {
+      "SELECT": [
+        "actor_user_id",
+        "audit_event_id",
+        "entity_id",
+        "entity_type",
+        "event_type",
+        "occurred_at",
+        "reason"
+      ],
+      "INSERT": [
+        "actor_user_id",
+        "audit_event_id",
+        "entity_id",
+        "entity_type",
+        "event_type",
+        "occurred_at",
+        "reason"
+      ]
+    },
+    "case_status_history": {
+      "SELECT": [
+        "case_id",
+        "case_status_history_id",
+        "change_reason",
+        "changed_at",
+        "changed_by_user_id",
+        "from_status_code",
+        "to_status_code"
+      ],
+      "INSERT": [
+        "case_id",
+        "case_status_history_id",
+        "change_reason",
+        "changed_at",
+        "changed_by_user_id",
+        "from_status_code",
+        "to_status_code"
+      ]
+    },
+    "case_access_requests": {
+      "SELECT": [
+        "approver_user_id",
+        "case_access_request_id",
+        "case_id",
+        "decided_at",
+        "decision_reason",
+        "expires_at",
+        "reason",
+        "request_status",
+        "requested_at",
+        "requested_scope",
+        "requester_user_id"
+      ],
+      "INSERT": [
+        "approver_user_id",
+        "case_access_request_id",
+        "case_id",
+        "decided_at",
+        "decision_reason",
+        "expires_at",
+        "reason",
+        "request_status",
+        "requested_scope",
+        "requester_user_id"
+      ],
+      "UPDATE": [
+        "approver_user_id",
+        "decided_at",
+        "decision_reason",
+        "request_status"
+      ]
+    },
+    "case_access_grants": {
+      "SELECT": [
+        "bureau_id",
+        "case_access_grant_id",
+        "case_id",
+        "granted_by_user_id",
+        "granted_scope",
+        "revoke_reason",
+        "revoked_at",
+        "source_request_id",
+        "user_id",
+        "valid_from",
+        "valid_until"
+      ],
+      "INSERT": [
+        "case_access_grant_id",
+        "case_id",
+        "granted_by_user_id",
+        "granted_scope",
+        "source_request_id",
+        "user_id",
+        "valid_from",
+        "valid_until"
+      ],
+      "UPDATE": [
+        "revoke_reason",
+        "revoked_at"
+      ]
+    },
+    "case_access_grant_approvals": {
+      "SELECT": [
+        "approver_user_id",
+        "approving_bureau_id",
+        "case_access_grant_approval_id",
+        "case_access_request_id",
+        "case_id",
+        "decided_at",
+        "decision",
+        "decision_reason",
+        "grant_id"
+      ],
+      "INSERT": [
+        "approver_user_id",
+        "approving_bureau_id",
+        "case_access_grant_approval_id",
+        "case_access_request_id",
+        "case_id",
+        "decided_at",
+        "decision",
+        "decision_reason"
+      ]
+    },
+    "case_transfers": {
+      "SELECT": [
+        "approved_by_user_id",
+        "case_id",
+        "case_transfer_id",
+        "completed_at",
+        "decided_at",
+        "from_bureau_id",
+        "from_officer_id",
+        "reason",
+        "requested_at",
+        "requested_by_user_id",
+        "requested_case_version",
+        "to_bureau_id",
+        "to_officer_id",
+        "transfer_status"
+      ],
+      "INSERT": [
+        "case_id",
+        "case_transfer_id",
+        "from_bureau_id",
+        "from_officer_id",
+        "reason",
+        "requested_by_user_id",
+        "requested_case_version",
+        "to_bureau_id",
+        "to_officer_id",
+        "transfer_status"
+      ],
+      "UPDATE": [
+        "approved_by_user_id",
+        "completed_at",
+        "decided_at",
+        "transfer_status"
+      ]
+    },
+    "case_transfer_approvals": {
+      "SELECT": [
+        "approval_side",
+        "approver_user_id",
+        "case_transfer_approval_id",
+        "case_transfer_id",
+        "decided_at",
+        "decision",
+        "decision_reason"
+      ],
+      "INSERT": [
+        "approval_side",
+        "approver_user_id",
+        "case_transfer_approval_id",
+        "case_transfer_id",
+        "decided_at",
+        "decision",
+        "decision_reason"
+      ]
+    },
+    "policy_sources": {
+      "SELECT": [
+        "created_at",
+        "issuing_authority",
+        "policy_source_id",
+        "source_code",
+        "source_type",
+        "source_uri",
+        "title"
+      ],
+      "INSERT": [
+        "issuing_authority",
+        "policy_source_id",
+        "source_code",
+        "source_type",
+        "title"
+      ]
+    },
+    "policy_versions": {
+      "SELECT": [
+        "approved_at",
+        "approved_by_user_id",
+        "content_hash",
+        "created_at",
+        "effective_from",
+        "effective_until",
+        "policy_source_id",
+        "policy_version_id",
+        "status",
+        "version_label"
+      ],
+      "INSERT": [
+        "approved_at",
+        "approved_by_user_id",
+        "effective_from",
+        "effective_until",
+        "policy_source_id",
+        "policy_version_id",
+        "status",
+        "version_label"
+      ]
+    },
+    "closure_checklists": {
+      "SELECT": [
+        "category_id",
+        "checklist_code",
+        "checklist_name",
+        "closure_checklist_id",
+        "is_active"
+      ],
+      "INSERT": [
+        "checklist_code",
+        "checklist_name",
+        "closure_checklist_id",
+        "is_active"
+      ]
+    },
+    "closure_checklist_versions": {
+      "SELECT": [
+        "approved_at",
+        "approved_by_user_id",
+        "closure_checklist_id",
+        "closure_checklist_version_id",
+        "effective_from",
+        "effective_until",
+        "policy_version_id",
+        "status",
+        "version_number"
+      ],
+      "INSERT": [
+        "approved_at",
+        "approved_by_user_id",
+        "closure_checklist_id",
+        "closure_checklist_version_id",
+        "effective_from",
+        "effective_until",
+        "policy_version_id",
+        "status",
+        "version_number"
+      ]
+    },
+    "closure_requirements": {
+      "SELECT": [
+        "blocks_disposal",
+        "closure_checklist_version_id",
+        "closure_requirement_id",
+        "is_mandatory",
+        "requirement_code",
+        "requirement_text",
+        "requirement_type",
+        "sort_order"
+      ],
+      "INSERT": [
+        "blocks_disposal",
+        "closure_checklist_version_id",
+        "closure_requirement_id",
+        "is_mandatory",
+        "requirement_code",
+        "requirement_text",
+        "requirement_type",
+        "sort_order"
+      ]
+    },
+    "closure_evaluations": {
+      "SELECT": [
+        "case_id",
+        "closure_checklist_version_id",
+        "closure_evaluation_id",
+        "evaluated_at",
+        "evaluated_by_user_id",
+        "evaluation_status",
+        "evaluation_summary",
+        "is_final"
+      ],
+      "INSERT": [
+        "case_id",
+        "closure_checklist_version_id",
+        "closure_evaluation_id",
+        "evaluated_at",
+        "evaluated_by_user_id",
+        "evaluation_status",
+        "evaluation_summary",
+        "is_final"
+      ]
+    },
+    "closure_evaluation_items": {
+      "SELECT": [
+        "closure_evaluation_id",
+        "closure_requirement_id",
+        "evidence_item_id",
+        "notes",
+        "result_code"
+      ],
+      "INSERT": [
+        "closure_evaluation_id",
+        "closure_requirement_id",
+        "notes",
+        "result_code"
+      ]
+    },
+    "closure_approvals": {
+      "SELECT": [
+        "approver_user_id",
+        "case_id",
+        "closure_approval_id",
+        "closure_evaluation_id",
+        "decided_at",
+        "decision",
+        "decision_reason"
+      ],
+      "INSERT": [
+        "approver_user_id",
+        "case_id",
+        "closure_approval_id",
+        "closure_evaluation_id",
+        "decided_at",
+        "decision",
+        "decision_reason"
+      ]
+    },
+    "sla_policies": {
+      "SELECT": [
+        "description",
+        "is_active",
+        "policy_code",
+        "policy_name",
+        "sla_policy_id"
+      ],
+      "INSERT": [
+        "is_active",
+        "policy_code",
+        "policy_name",
+        "sla_policy_id"
+      ]
+    },
+    "sla_policy_versions": {
+      "SELECT": [
+        "applies_to_category_id",
+        "applies_to_work_item_type",
+        "approved_at",
+        "approved_by_user_id",
+        "calendar_code",
+        "created_at",
+        "duration_minutes",
+        "effective_from",
+        "effective_until",
+        "escalation_after_minutes",
+        "pause_conditions",
+        "policy_version_id",
+        "sla_policy_id",
+        "sla_policy_version_id",
+        "start_event_code",
+        "version_number",
+        "warning_threshold_minutes"
+      ],
+      "INSERT": [
+        "approved_at",
+        "approved_by_user_id",
+        "duration_minutes",
+        "effective_from",
+        "effective_until",
+        "policy_version_id",
+        "sla_policy_id",
+        "sla_policy_version_id",
+        "start_event_code",
+        "version_number"
+      ]
+    },
+    "sla_instances": {
+      "SELECT": [
+        "case_id",
+        "completed_at",
+        "created_at",
+        "current_due_at",
+        "cycle_number",
+        "original_due_at",
+        "sla_instance_id",
+        "sla_policy_version_id",
+        "sla_status",
+        "started_at",
+        "work_item_id"
+      ],
+      "INSERT": [
+        "case_id",
+        "current_due_at",
+        "cycle_number",
+        "original_due_at",
+        "sla_instance_id",
+        "sla_policy_version_id",
+        "sla_status",
+        "started_at",
+        "work_item_id"
+      ],
+      "UPDATE": [
+        "completed_at",
+        "sla_status"
+      ]
+    },
+    "sla_events": {
+      "SELECT": [
+        "actor_user_id",
+        "event_type",
+        "new_due_at",
+        "occurred_at",
+        "policy_version_id",
+        "previous_due_at",
+        "reason",
+        "sla_event_id",
+        "sla_instance_id"
+      ],
+      "INSERT": [
+        "actor_user_id",
+        "event_type",
+        "new_due_at",
+        "occurred_at",
+        "policy_version_id",
+        "reason",
+        "sla_event_id",
+        "sla_instance_id"
+      ]
+    },
+    "regulatory_actions": {
+      "SELECT": [
+        "action_status",
+        "action_title",
+        "action_type",
+        "actual_end_at",
+        "actual_start_at",
+        "case_id",
+        "created_at",
+        "created_by_user_id",
+        "institution_id",
+        "lead_bureau_id",
+        "planned_end_at",
+        "planned_start_at",
+        "policy_version_id",
+        "regulatory_action_id",
+        "updated_at"
+      ],
+      "INSERT": [
+        "action_status",
+        "action_title",
+        "action_type",
+        "case_id",
+        "created_by_user_id",
+        "institution_id",
+        "lead_bureau_id",
+        "planned_end_at",
+        "planned_start_at",
+        "regulatory_action_id"
+      ]
+    },
+    "regulatory_action_participants": {
+      "SELECT": [
+        "added_at",
+        "added_by_user_id",
+        "bureau_id",
+        "participant_role",
+        "regulatory_action_id"
+      ]
+    },
+    "conflict_findings": {
+      "SELECT": [
+        "confidence",
+        "conflict_finding_id",
+        "conflict_rule_id",
+        "detected_at",
+        "explanation",
+        "finding_status",
+        "institution_id",
+        "resolution_notes",
+        "resolved_at",
+        "review_reason",
+        "reviewed_at",
+        "reviewed_by_user_id",
+        "severity_code",
+        "triggering_facts"
+      ],
+      "INSERT": [
+        "conflict_finding_id",
+        "explanation",
+        "finding_status",
+        "institution_id",
+        "review_reason",
+        "reviewed_at",
+        "reviewed_by_user_id",
+        "severity_code",
+        "triggering_facts"
+      ],
+      "UPDATE": [
+        "finding_status",
+        "review_reason",
+        "reviewed_at",
+        "reviewed_by_user_id"
+      ]
+    },
+    "conflict_finding_actions": {
+      "SELECT": [
+        "conflict_finding_id",
+        "regulatory_action_id",
+        "relation_to_finding"
+      ],
+      "INSERT": [
+        "conflict_finding_id",
+        "regulatory_action_id",
+        "relation_to_finding"
+      ]
+    },
+    "contradiction_findings": {
+      "SELECT": [
+        "claim_a_id",
+        "claim_b_id",
+        "confidence",
+        "contradiction_finding_id",
+        "contradiction_type",
+        "detected_at",
+        "explanation",
+        "finding_status",
+        "model_name",
+        "model_version",
+        "review_reason",
+        "reviewed_at",
+        "reviewed_by_user_id",
+        "rule_version"
+      ],
+      "UPDATE": [
+        "finding_status",
+        "review_reason",
+        "reviewed_at",
+        "reviewed_by_user_id"
+      ]
+    },
+    "evidence_claims": {
+      "SELECT": [
+        "claim_extraction_method",
+        "claim_text",
+        "confidence",
+        "created_at",
+        "created_by_user_id",
+        "evidence_claim_id",
+        "evidence_item_id",
+        "model_name",
+        "model_version",
+        "normalized_claim",
+        "object_value",
+        "predicate_code",
+        "subject_reference",
+        "valid_from",
+        "valid_until"
+      ]
+    },
+    "documents": {
+      "SELECT": [
+        "confidentiality_level",
+        "created_at",
+        "document_id",
+        "document_type",
+        "owner_case_id",
+        "owner_submission_id",
+        "uploaded_by_user_id"
+      ],
+      "INSERT": [
+        "document_id",
+        "document_type",
+        "owner_case_id",
+        "uploaded_by_user_id"
+      ]
+    },
+    "document_versions": {
+      "SELECT": [
+        "byte_size",
+        "document_id",
+        "document_version_id",
+        "malware_scan_status",
+        "media_type",
+        "original_filename",
+        "sha256_hex",
+        "storage_key",
+        "uploaded_at",
+        "uploaded_by_user_id",
+        "version_number"
+      ],
+      "INSERT": [
+        "byte_size",
+        "document_id",
+        "document_version_id",
+        "malware_scan_status",
+        "media_type",
+        "original_filename",
+        "sha256_hex",
+        "storage_key",
+        "uploaded_at",
+        "uploaded_by_user_id",
+        "version_number"
+      ]
+    },
+    "evidence_items": {
+      "SELECT": [
+        "case_id",
+        "document_version_id",
+        "evidence_item_id",
+        "evidence_status",
+        "evidence_type",
+        "received_at",
+        "regulatory_action_id",
+        "source_description",
+        "verified_at",
+        "verified_by_user_id"
+      ],
+      "INSERT": [
+        "case_id",
+        "document_version_id",
+        "evidence_item_id",
+        "evidence_status",
+        "evidence_type",
+        "received_at",
+        "source_description"
+      ],
+      "UPDATE": [
+        "evidence_status",
+        "verified_at",
+        "verified_by_user_id"
+      ]
+    },
+    "submission_translations": {
+      "SELECT": [
+        "created_at",
+        "provenance",
+        "provider_model_version",
+        "provider_name",
+        "reviewed_at",
+        "reviewed_by_user_id",
+        "source_language_code",
+        "submission_id",
+        "target_language_code",
+        "translated_body",
+        "translated_subject",
+        "translation_id",
+        "translation_version"
+      ],
+      "UPDATE": [
+        "provenance",
+        "reviewed_at",
+        "reviewed_by_user_id",
+        "translated_body",
+        "translated_subject"
+      ]
+    },
+    "match_runs": {
+      "SELECT": [
+        "ai_model_version_id",
+        "algorithm_code",
+        "completed_at",
+        "error_detail",
+        "match_run_id",
+        "parameters",
+        "run_stage",
+        "run_status",
+        "started_at",
+        "submission_id"
+      ]
+    },
+    "match_candidates": {
+      "SELECT": [
+        "candidate_case_id",
+        "candidate_submission_id",
+        "explanation",
+        "feature_scores",
+        "match_candidate_id",
+        "match_classification",
+        "match_run_id",
+        "overall_score",
+        "review_reason",
+        "review_status",
+        "reviewed_at",
+        "reviewed_by_user_id"
+      ],
+      "UPDATE": [
+        "match_classification",
+        "review_reason",
+        "review_status",
+        "reviewed_at",
+        "reviewed_by_user_id"
+      ]
+    }
+  }
+}

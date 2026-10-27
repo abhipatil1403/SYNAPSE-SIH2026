@@ -1,4 +1,7 @@
 import { defineConfig } from "@playwright/test";
+// This installed Playwright version includes input values in its automatic
+// AI error-context snapshot, including password fields. Keep it disabled.
+process.env.PLAYWRIGHT_NO_COPY_PROMPT='1';
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 90000,
@@ -7,14 +10,14 @@ export default defineConfig({
   workers: 1,
   reporter: [["list"]],
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: process.env.SYNAPSE_TEST_ORIGIN??"http://localhost:3000",
     channel: "msedge",
     headless: true,
     viewport: { width: 1536, height: 1024 },
     screenshot: "only-on-failure",
-    trace: "retain-on-failure",
+    trace: "off",
   },
-  webServer: {
+  webServer: process.env.SYNAPSE_EXTERNAL_TEST_SERVER==='true'?undefined:{
     command: "npm run dev",
     url: "http://localhost:3000/dashboard",
     reuseExistingServer: true,

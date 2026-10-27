@@ -7,28 +7,50 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint app components lib tests --max-warnings 0",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "test:e2e": "playwright test",
     "baseline:check": "node scripts/baseline.mjs --check",
     "test:database": "node scripts/test-database.mjs",
     "test:database:phase2": "node scripts/test-database.mjs --phase2",
+    "test:database:platform": "node --import tsx scripts/test-database.mjs --platform",
+    "test:database:auth": "node --import tsx scripts/test-database.mjs --auth",
+    "test:database:sla": "node --import tsx scripts/test-database.mjs --sla",
+    "test:database:workbench": "node --import tsx scripts/workbench/test-database.ts",
+    "workbench:setup": "node --env-file=.env.local --env-file=.env.operator.local scripts/workbench/setup.mjs --create-isolated-development",
+    "workbench:start": "node --import tsx scripts/workbench/start.mjs",
+    "workbench:dev": "node --import tsx scripts/workbench/dev.mjs --isolated",
+    "workbench:worker": "node --env-file=.env.workbench.local --import tsx scripts/workbench/worker.mjs",
+    "test:browser:isolated": "node scripts/workbench/test-browser.mjs",
+    "phase9:bootstrap:snapshot": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase9/bootstrap-admin.mjs --snapshot-approved-admin",
+    "phase9:officers:snapshot": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase9/retire-officers.mjs --snapshot-approved-officers",
+    "phase9:bootstrap:check": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase9/bootstrap-admin.mjs",
+    "phase9:bootstrap:apply": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase9/bootstrap-admin.mjs --apply",
+    "phase9:retire:check": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase9/retire-officers.mjs",
+    "phase9:retire:apply": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase9/retire-officers.mjs --apply",
+    "phase9:translation:configure": "node scripts/phase9/configure-translation.mjs --local-service",
+    "phase9:test:translation": "node --env-file=.env.integrations.local --import tsx scripts/phase9/test-translation.ts",
+    "phase9:test:translation:database": "node --env-file=.env.integrations.local --import tsx scripts/workbench/test-database.ts --real-translation",
     "phase2:audit": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase2/hosted-audit.mjs",
     "phase2:provision:check": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase2/provision.mjs",
-    "phase2:test:auth": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase2/verify-auth.mjs"
+    "phase2:test:auth": "node --env-file=.env.local --env-file=.env.operator.local scripts/phase2/verify-auth.mjs",
+    "test:database:operations": "node --import tsx scripts/test-database.mjs --operations",
+    "test:http:gmail": "node scripts/phase14/test-http.mjs",
+    "test:scanner": "node --test services/scanner/server.test.mjs"
   },
   "dependencies": {
     "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.118.0",
+    "@vercel/functions": "3.10.4",
     "@xyflow/react": "^12.12.0",
-    "lucide-react": "^1.61.0",
     "next": "^16.4.3",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "recharts": "^3.10.1",
     "server-only": "^0.0.1",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "pg": "8.16.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
@@ -39,9 +61,13 @@
     "@types/react-dom": "^19.3.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.3",
-    "pg": "8.16.3",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3"
+  },
+  "overrides": {
+    "@vercel/cli-config": {
+      "zod": "4.6.7"
+    }
   }
 }

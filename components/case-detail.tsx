@@ -1,4 +1,5 @@
 "use client";
+import {ActionForm} from "./feedback";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -15,7 +16,7 @@ import {
   ShieldCheck,
   Sparkles,
   UserRound,
-} from "lucide-react";
+} from "./symbols";
 import {
   canApprove,
   canEdit,
@@ -275,7 +276,7 @@ export function CaseDetail({ id }: { id: string }) {
                     reviewing this case.
                   </p>
                 )}
-                <form
+                <ActionForm
                   onSubmit={(e) => {
                     e.preventDefault();
                     const form = e.currentTarget;
@@ -310,7 +311,7 @@ export function CaseDetail({ id }: { id: string }) {
                       Save Note
                     </Button>
                   </div>
-                </form>
+                </ActionForm>
               </Card>
               <Card
                 title="Linked Cases"
@@ -667,7 +668,7 @@ export function CaseDetail({ id }: { id: string }) {
           }
           onClose={() => !busy && setAction(null)}
         >
-          <form onSubmit={submit} className="form-stack">
+          <ActionForm onSubmit={submit} className="form-stack">
             {action === "evidence" ? (
               <>
                 <p className="dialog-description">
@@ -752,7 +753,7 @@ export function CaseDetail({ id }: { id: string }) {
                 {busy ? "Retaining…" : "Confirm Action"}
               </Button>
             </div>
-          </form>
+          </ActionForm>
         </Modal>
       )}
       {preview && documents && (

@@ -1,0 +1,45 @@
+{
+  "checkedAt": "2026-10-27T20:37:42.507Z",
+  "environment": "Local production Next server / real hosted Supabase Auth and restricted TLS gateway",
+  "browserAutomation": false,
+  "providerMocked": false,
+  "complaintWrites": false,
+  "onlyFreshTestSessionsLoggedOut": true,
+  "releaseChanged": false,
+  "results": [
+    {
+      "account": 1,
+      "realLogin": true,
+      "profile": true,
+      "currentSession": true,
+      "readOnlyAccountWorkspace": true,
+      "roleReadinessIsolation": true,
+      "refresh": true,
+      "applicationLogout": true,
+      "staleCookieReplayDenied": true
+    },
+    {
+      "account": 2,
+      "realLogin": true,
+      "profile": true,
+      "currentSession": true,
+      "readOnlyAccountWorkspace": true,
+      "roleReadinessIsolation": true,
+      "refresh": true,
+      "applicationLogout": true,
+      "staleCookieReplayDenied": true
+    },
+    {
+      "account": 3,
+      "realLogin": true,
+      "profile": true,
+      "currentSession": true,
+      "readOnlyAccountWorkspace": true,
+      "roleReadinessIsolation": true,
+      "refresh": true,
+      "applicationLogout": true,
+      "staleCookieReplayDenied": true
+    }
+  ],
+  "allPassed": true
+}

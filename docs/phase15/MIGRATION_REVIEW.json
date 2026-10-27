@@ -1,0 +1,49 @@
+{
+  "checkedAt": "2026-10-27T18:58:16.503Z",
+  "migrations": [
+    {
+      "file": "20261027171357_phase14_canonical_operations.sql",
+      "sha256": "afbbb100279dfd29e873c59792ee80fb642c7d6ff3ed208c2f97b7cafa491e4c"
+    },
+    {
+      "file": "20261027174828_phase15_hosted_gmail_oauth.sql",
+      "sha256": "6b3d0a7716760b53e39b5a8544ea0ef9b8c11eee4b4c82831813238420cf8c52"
+    },
+    {
+      "file": "20261027185138_phase15_active_intake_bureau.sql",
+      "sha256": "8245019e18ce5e7c47d20d874b95e853b5d6583a8f51efeb490146dbdffb25f9"
+    }
+  ],
+  "hostedApplied": true,
+  "transactionalDryRun": false,
+  "allOriginalTableCountsUnchanged": true,
+  "originalFunctionDefinitionsUnchanged": true,
+  "readLeaseUnchanged": true,
+  "operationsEnabled": false,
+  "businessWritesEnabled": false,
+  "oauthConnectionsCreated": 0,
+  "function": {
+    "owner": "synapse_gmail_manager",
+    "prosecdef": true,
+    "proconfig": [
+      "search_path=\"\"",
+      "row_security=on"
+    ],
+    "anon": false,
+    "authenticated": false,
+    "service": false,
+    "gateway": true
+  },
+  "roles": [
+    {
+      "rolname": "synapse_gmail_manager",
+      "safe": true
+    },
+    {
+      "rolname": "synapse_operations_runtime",
+      "safe": true
+    }
+  ],
+  "localEvidenceAt": "2026-10-27T18:57:21.115Z",
+  "scope": "Reviewed additive schema and private-role privileges only; no account grants, managed Auth changes, complaint mutations, public RPC reopening or release activation."
+}

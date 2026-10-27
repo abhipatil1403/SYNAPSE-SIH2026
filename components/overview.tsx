@@ -1,81 +1,60 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import {liveRoleLabels} from "@/lib/live/contracts";
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import {
-  ArrowDownToLine,
   ArrowUpRight,
   CheckCheck,
   Circle,
   FileCheck2,
   Network,
   Sparkles,
-} from "lucide-react";
-import { bureaus, officers } from "@/lib/seed";
-import { metrics } from "@/lib/metrics";
-import { dashboardBuckets, type DashboardPeriod } from "@/lib/dashboard";
-import { formatCalendarDay, selectCalendarEvents } from "@/lib/calendar";
+} from "./symbols";
+
+
+import type {DashboardPeriod} from "@/lib/dashboard";
+import {platformDashboard,platformCalendar} from "@/lib/platform/selectors";
+import {formatCalendarDay,addCalendarDays,type CalendarEvent} from "@/lib/calendar";
 import { QuickCalendar, useTodayKey } from "./calendar-view";
 import { useReducedMotion } from "./motion";
-import { useDemo } from "./provider";
+import {useOperational} from "./operational-provider";
 import {
   Avatar,
   Badge,
-  Button,
   Card,
   Empty,
   Metric,
   PageHeader,
-  Tabs,
-  csv,
   date,
   dayKey,
-  downloadText,
 } from "./ui";
-import { CreateCaseButton } from "./forms";
+
 
 const greens = ["#0d3a23", "#1d7347", "#5dbd8b", "#c0e2d0"];
 export function Overview() {
-  const { cases, tasks, state, actor, findings, audit } = useDemo();
-  const m = metrics(cases);
-  const reducedMotion = useReducedMotion(state.settings.reducedMotion);
-  const [chartMode, setChartMode] = useState("Intake");
-  const today = useTodayKey();
-  const [period, setPeriod] = useState<DashboardPeriod>("30D");
-  const weeks = dashboardBuckets(cases, today, period);
-  const calendarEvents = selectCalendarEvents(cases, tasks);
-  const chartMaximum = Math.max(
-    1,
-    ...weeks.map((w) => w[chartMode as "Intake" | "Resolved"]),
-  );
-  const upcoming = cases
-    .filter((c) => c.status !== "DISPOSED" && dayKey(c.dueAt) >= today)
-    .sort((a, b) => a.dueAt.localeCompare(b.dueAt))
-    .slice(0, 3);
+  const {snapshot:s}=useOperational();
+  const reducedMotion=useReducedMotion(false),[chartMode,setChartMode]=useState('Intake'),today=useTodayKey(),[period,setPeriod]=useState<DashboardPeriod>('30D');
+  if(!s?.me)return null;
+  const dash=platformDashboard(s,s.generatedAt,Number(period.slice(0,-1))),m={total:dash.total,resolved:dash.resolved,active:dash.active,overdue:dash.overdue,review:dash.pendingReview,rate:dash.resolutionPercent};
+  const cases=[...s.cases].sort((a,b)=>Date.parse(b.receivedAt)-Date.parse(a.receivedAt)).map(c=>({...c,institution:s.institutions.find(i=>i.id===c.institutionId)?.name??c.institutionId,bureau:s.bureaus.find(b=>b.id===c.bureauId)?.name??c.bureauId,officerName:s.directory?.find(u=>u.id===c.officerId)?.name??'Assigned officer'}));
+  const bureaus=s.bureaus.map(b=>b.name),actor={role:s.me.roles.map(code=>liveRoleLabels[code as keyof typeof liveRoleLabels]??code).join(' · ')};
+  const findings=s.findings, audit=dash.activity.map(e=>({...e,action:e.type,actor:s.directory?.find(u=>u.id===e.actorId)?.name??e.actorId,target:e.caseId?('#'+s.cases.find(c=>c.id===e.caseId)?.caseNumber):'Workspace'}));
+  const weeks=dash.analytics.map(b=>({...b,end:addCalendarDays(b.end,-1),name:formatCalendarDay(b.start,{day:'numeric',month:'short'}),Intake:b.received,Resolved:b.resolved}));
+  const types:Record<string,CalendarEvent['type']>={SLA:'SLA deadlines',TASK:'Follow-ups',HEARING:'Hearings',REVIEW:'Bureau reviews',APPROVAL:'Approvals',BUREAU_ACTIVITY:'Bureau activities'};
+  const calendarEvents:CalendarEvent[]=platformCalendar(s).map(e=>({...e,key:e.day,type:types[e.type],bureau:s.bureaus.find(b=>b.id===s.cases.find(c=>c.id===e.caseId)?.bureauId)?.name??'',source:e.type}));
+  const chartMaximum=Math.max(1,...weeks.map(w=>w[chartMode as 'Intake'|'Resolved']));
+  const upcoming=cases.filter(c=>c.status!=='DISPOSED').flatMap(c=>{const due=s.sla.filter(d=>d.caseId===c.id&&['RUNNING','PAUSED','BREACHED'].includes(d.status)).sort((a,b)=>Date.parse(a.dueAt)-Date.parse(b.dueAt))[0];return due?[{...c,dueAt:due.dueAt}]:[];}).filter(c=>dayKey(c.dueAt)>=today).sort((a,b)=>Date.parse(a.dueAt)-Date.parse(b.dueAt)).slice(0,3);
   return (
     <div className="overview-dashboard">
       <PageHeader
         title="Overview"
         subtitle="A clear view of every case. A connected path to resolution."
       >
-        <Link href="/analytics" className="btn">
+        <Link href="/reports" className="btn">
           View Reports <ArrowUpRight size={16} />
         </Link>
-        <CreateCaseButton />
+        {s.workspace?<button className="btn primary" disabled title="Hosted complaint writes remain disabled">Create Complaint</button>:<Link href="/intake" className="btn primary">Create Complaint</Link>}
       </PageHeader>
       <div className="metrics-grid">
         <Metric
@@ -94,14 +73,14 @@ export function Overview() {
         <Metric
           title="Active Cases"
           value={m.active}
-          caption={`${m.overdue} beyond example SLA`}
+          caption={`${m.overdue} beyond approved SLA`}
           href="/complaints?status=active"
         />
         <Metric
           title="Pending Review"
           value={m.review}
           caption="Ready for a closer look"
-          href="/complaints?status=RESOLUTION_REVIEW"
+          href="/complaints?status=UNDER_REVIEW"
         />
       </div>
       <div className="dashboard-grid">
@@ -247,7 +226,7 @@ export function Overview() {
             </Link>
           }
         >
-          <p className="card-subtitle">Example SLAs · next in your scope.</p>
+          <p className="card-subtitle">Approved deadlines · next in your scope.</p>
           {upcoming.length ? (
             upcoming.map((c, i) => (
               <Link
@@ -297,17 +276,13 @@ export function Overview() {
                   <Network size={18} />
                 </span>
                 <div>
-                  <strong>{b} Bureau</strong>
+                  <strong>{b}</strong>
                   <p>
                     {relevant.length - done} active cases · {done} resolved
                   </p>
                 </div>
                 <div className="avatar-stack">
-                  {officers
-                    .filter((o) => o.bureau === b)
-                    .map((o) => (
-                      <Avatar key={o.id} id={o.id} small />
-                    ))}
+                  {s.directory?.filter(u=>u.bureauIds.includes(s.bureaus.find(v=>v.name===b)!.id)).slice(0,4).map(u=><Avatar key={u.id} name={u.name} small/>)}
                 </div>
                 <Badge tone="neutral">
                   {relevant.length
@@ -401,26 +376,23 @@ export function Overview() {
               <div>
                 <strong>{c.subject}</strong>
                 <p>
-                  {c.id} · {c.institution}
+                  #{c.caseNumber} · {c.institution}
                 </p>
               </div>
               <Badge>{c.status}</Badge>
-              <Avatar id={c.officer} small />
+              <Avatar name={c.officerName} small />
             </Link>
           ))}
-          {!cases.length && <Empty title="No cases in this perspective" />}
+          {!cases.length && <Empty title="No authorized registered cases" />}
         </Card>
         <section className="intelligence-feature">
           <div className="feature-orbit" />
           <div className="feature-label">
             <Sparkles size={16} />
-            AI FINDINGS <Badge tone="light">Simulated</Badge>
+            AI FINDINGS <Badge tone="light">Human review</Badge>
           </div>
           <h2>
-            {findings.filter((f) => f.state === "Pending review").length}{" "}
-            findings
-            <br />
-            to review.
+            {s.workspace?<>Hosted AI<br/>integration pending.</>:<>{findings.filter((f) => f.status === "DETECTED").length}{" "}findings<br/>to review.</>}
           </h2>
           <p>
             Source-backed insights.
@@ -432,9 +404,7 @@ export function Overview() {
           </Link>
         </section>
         <Card
-          title={
-            state.settings.digest ? "Recent Activity" : "Activity Digest Paused"
-          }
+          title="Recent Activity"
           className="activity-card"
           action={
             <Link href="/admin" className="text-btn">
@@ -442,7 +412,7 @@ export function Overview() {
             </Link>
           }
         >
-          {(state.settings.digest ? audit : []).slice(0, 2).map((e) => (
+          {audit.slice(0, 2).map((e) => (
             <div className="activity-row" key={e.id}>
               <span className="activity-point">
                 <CheckCheck size={14} />
@@ -456,302 +426,16 @@ export function Overview() {
               <small>{date(e.at)}</small>
             </div>
           ))}
-          {(!audit.length || !state.settings.digest) && (
-            <Empty
-              title={
-                state.settings.digest
-                  ? "No authorized activity"
-                  : "Activity digest is turned off"
-              }
-              description="Manage local activity summaries in Settings → Notifications."
-            />
-          )}
+          {!audit.length&&<Empty title={s.workspace?'Activity integration pending':'No authorized activity'} description={s.workspace?'Hosted activity is not connected in this read-only preview.':'Committed workspace changes appear here.'}/>}
         </Card>
       </div>
       <div className="workspace-note">
         <ShieldNotice />
-        You’re viewing {actor.role.toLowerCase()} access. Example SLAs and
-        policies are simulated.
+        {actor.role} · Authorized PostgreSQL development data · Hosted release disabled.
       </div>
     </div>
   );
 }
 function ShieldNotice() {
   return <Circle size={10} fill="currentColor" />;
-}
-
-export function Analytics() {
-  const { cases, state, actor, run } = useDemo();
-  const [period, setPeriod] = useState("30D");
-  const days = Number(period.slice(0, -1));
-  const now = new Date();
-  const start = now.getTime() - days * 86400000;
-  const scoped = cases.filter((c) => Date.parse(c.receivedAt) >= start);
-  const m = metrics(scoped, now);
-  const data = Array.from({ length: days }, (_, i) => {
-    const d = new Date(now.getTime() - (days - 1 - i) * 86400000);
-    const key = dayKey(d);
-    return {
-      name: date(d.toISOString()),
-      Intake: cases.filter((c) => dayKey(c.receivedAt) === key).length,
-      Resolved: cases.filter(
-        (c) =>
-          c.disposedAt &&
-          dayKey(c.disposedAt) === key &&
-          c.status === "DISPOSED",
-      ).length,
-    };
-  });
-  const distribution = bureaus
-    .map((b) => ({
-      name: b,
-      value: scoped.filter((c) => c.bureau === b).length,
-    }))
-    .filter((d) => d.value);
-  function exportData() {
-    if (
-      run(
-        { type: "export", caseIds: scoped.map((c) => c.id) },
-        "Authorized report exported and audited",
-      )
-    )
-      downloadText(
-        "synapse-authorized-report.csv",
-        csv([
-          [
-            "Case ID",
-            "Subject",
-            "Institution",
-            "Bureau",
-            "Status",
-            "Received",
-            "Example SLA",
-          ],
-          ...scoped.map((c) => [
-            c.id,
-            c.subject,
-            c.institution,
-            c.bureau,
-            c.status,
-            c.receivedAt,
-            c.dueAt,
-          ]),
-        ]),
-        "text/csv",
-      );
-  }
-  return (
-    <>
-      <PageHeader
-        title="Analytics"
-        subtitle="Understand the workload. Find the opportunities to move forward."
-      >
-        <Tabs
-          options={["7D", "30D", "90D"]}
-          value={period}
-          onChange={setPeriod}
-        />
-        <Button onClick={exportData}>
-          <ArrowDownToLine size={16} />
-          Export Report
-        </Button>
-      </PageHeader>
-      <div className="metrics-grid">
-        <Metric
-          title="Resolved Volume"
-          value={m.resolved}
-          caption={`Current disposed cases received in ${period}`}
-          featured
-        />
-        <Metric
-          title="Overdue Cases"
-          value={m.overdue}
-          caption="Active cases past their example deadline"
-        />
-        <Metric
-          title="On-time Disposal"
-          value={m.onTime === null ? "—" : `${m.onTime}%`}
-          caption="On-time ÷ disposed cases in cohort"
-        />
-        <Metric
-          title="Median Resolution"
-          value={m.median === null ? "—" : `${m.median.toFixed(1)}d`}
-          caption="Received-to-disposal, completed cohort"
-        />
-      </div>
-      <div className="analytics-grid">
-        <Card
-          title="Intake & Resolution Trend"
-          className="trend-card"
-          action={<Badge tone="green">Last {days} days</Badge>}
-        >
-          <p className="card-subtitle">
-            Actual fictional event dates. Zero means no recorded event.
-          </p>
-          <div
-            className="trend-chart"
-            role="img"
-            aria-label={`${data.reduce((n, d) => n + d.Intake, 0)} intake events and ${data.reduce((n, d) => n + d.Resolved, 0)} current disposal events in the selected period`}
-          >
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart
-                data={data}
-                margin={{ top: 15, right: 8, left: -24, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="areaGreen" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#5dbd8b" stopOpacity={0.45} />
-                    <stop offset="100%" stopColor="#5dbd8b" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} stroke="#eef0ee" />
-                <XAxis
-                  dataKey="name"
-                  minTickGap={35}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 10, fill: "#646d67" }}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 10, fill: "#646d67" }}
-                />
-                <Tooltip contentStyle={{ borderRadius: 14, fontSize: 12 }} />
-                <Legend iconType="circle" iconSize={7} />
-                <Area
-                  isAnimationActive={false}
-                  type="monotone"
-                  dataKey="Intake"
-                  stroke="#1d7347"
-                  strokeWidth={2.5}
-                  fill="url(#areaGreen)"
-                />
-                <Area
-                  isAnimationActive={false}
-                  type="monotone"
-                  dataKey="Resolved"
-                  stroke="#91a49a"
-                  strokeWidth={2}
-                  strokeDasharray="4 4"
-                  fill="transparent"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-        <Card title="Bureau Distribution">
-          <p className="card-subtitle">
-            Registered cases received in the selected period
-          </p>
-          {distribution.length ? (
-            <>
-              <div
-                className="donut-chart"
-                role="img"
-                aria-label={distribution
-                  .map((d) => `${d.name}: ${d.value}`)
-                  .join(", ")}
-              >
-                <ResponsiveContainer width="100%" height={200}>
-                  <PieChart>
-                    <Pie
-                      isAnimationActive={false}
-                      data={distribution}
-                      dataKey="value"
-                      innerRadius={61}
-                      outerRadius={83}
-                      paddingAngle={5}
-                      stroke="none"
-                    >
-                      {distribution.map((d, i) => (
-                        <Cell key={d.name} fill={greens[i % 4]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div>
-                  <strong>{scoped.length}</strong>
-                  <span>Total cases</span>
-                </div>
-              </div>
-              {distribution.map((d, i) => (
-                <div className="legend-row" key={d.name}>
-                  <i style={{ background: greens[i % 4] }} />
-                  {d.name}
-                  <strong>{d.value}</strong>
-                </div>
-              ))}
-            </>
-          ) : (
-            <Empty title="No records in this period" />
-          )}
-        </Card>
-        <Card
-          title="Activity Overview"
-          action={<span className="muted">{days} days</span>}
-        >
-          <p className="card-subtitle">
-            Recorded, authorized audit events per day
-          </p>
-          <div className="heatmap">
-            {Array.from({ length: days }, (_, i) => {
-              const day = new Date(now.getTime() - (days - 1 - i) * 86400000);
-              const count = state.audit.filter(
-                (e) =>
-                  cases.some((c) => c.id === e.target) &&
-                  dayKey(e.at) === dayKey(day),
-              ).length;
-              return (
-                <span
-                  key={i}
-                  title={`${date(day.toISOString())}: ${count} events`}
-                  style={{
-                    background:
-                      count > 3 ? "#1d7347" : count ? "#5dbd8b" : "#edf1ee",
-                  }}
-                />
-              );
-            })}
-          </div>
-          <div className="chart-foot">
-            <span>Less activity</span>
-            <span>
-              More activity <i className="legend-dot" />
-            </span>
-          </div>
-        </Card>
-        <Card
-          title="Bureau Performance"
-          action={<span className="muted">Authorized cohort</span>}
-        >
-          {bureaus.map((b, i) => {
-            const bm = metrics(scoped.filter((c) => c.bureau === b));
-            return (
-              <div className="leader-row" key={b}>
-                <span className="rank">0{i + 1}</span>
-                <div>
-                  <strong>{b}</strong>
-                  <p>
-                    {bm.resolved} resolved / {bm.total} registered
-                  </p>
-                </div>
-                <div className="workload-track">
-                  <span style={{ width: `${bm.rate}%` }} />
-                </div>
-                <strong>{bm.rate}%</strong>
-              </div>
-            );
-          })}
-        </Card>
-      </div>
-      <p className="fine-print">
-        Cohort: cases received in the selected period, scoped to {actor.role}.
-        Reopened cases are active; trend shows current disposal records, not a
-        historical compliance report.
-      </p>
-    </>
-  );
 }

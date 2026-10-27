@@ -1,0 +1,12 @@
+{
+  "checkedAt": "2026-10-27T10:08:02.200Z",
+  "source": "Actual Google Gemini API; explicitly fictional approved development text only",
+  "providerVersion": "Google Gemini/gemini-embedding-001/SEMANTIC_SIMILARITY/768",
+  "actualProvider": true,
+  "dimensions": 768,
+  "vectorsReturned": 3,
+  "selfCosine": 0.999999999999999,
+  "relatedCosine": 0.9694583241842193,
+  "unrelatedCosine": 0.7449495917623322,
+  "qualityCalibration": "AWAITING USER MANUAL TESTING"
+}

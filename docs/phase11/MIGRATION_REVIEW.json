@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-10-27T12:54:31.180Z",
+  "migration": "20261027124140_phase11_readonly_workspace.sql",
+  "sha256": "6146e5c83c2e69b0f6c58d0115541efc8224cfbf17c847aacc62f039a9b0cfd0",
+  "localAuthorizationPassed": true,
+  "hostedApplied": true,
+  "function": {
+    "owner": "synapse_case_reader",
+    "prosecdef": true,
+    "proconfig": [
+      "search_path=\"\"",
+      "row_security=on"
+    ],
+    "anon": false,
+    "authenticated": false,
+    "service": false,
+    "gateway": true
+  },
+  "checks": {
+    "owner_safe": true,
+    "restricted_login": true,
+    "no_documents": true,
+    "no_writes": true
+  },
+  "legacyFunctionsUnchanged": true,
+  "businessCountsUnchanged": true,
+  "gateEnabled": false,
+  "businessWritesEnabled": false,
+  "scope": "Private account-only fallback plus expiring read-only case/institution/case-SLA projection; no managed Auth, public RPC grant or activation change"
+}

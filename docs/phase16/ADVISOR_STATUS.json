@@ -1,0 +1,9 @@
+{
+  "checkedAt": "2026-10-27T20:36:52.224096+00:00",
+  "service": "Supabase security advisors",
+  "status": "BLOCKED",
+  "connectorError": "Permission denied / MCP -32600",
+  "successfulFinalAdvisorRun": false,
+  "separateCatalogReview": "MIGRATION_REVIEW.json and HOSTED_NEGATIVE_RESULTS.json; these do not replace a provider advisor run",
+  "managedAuthOwnershipChanged": false
+}

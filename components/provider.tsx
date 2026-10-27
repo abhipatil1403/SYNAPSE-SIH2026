@@ -3,10 +3,10 @@ import {
   createContext,
   useContext,
   useEffect,
-  useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import {Feedback,useToast} from "./feedback";
 import { ZodError } from "zod";
 import { demoRepository } from "@/lib/repository";
 import { actorFor } from "@/lib/seed";
@@ -43,17 +43,10 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     demoRepository.getSnapshot,
     demoRepository.getServerSnapshot,
   );
-  const [toast, setToast] = useState<{ text: string; error?: boolean } | null>(
-    null,
-  );
+  const {notify:showToast}=useToast();
   useEffect(() => {
     demoRepository.hydrate();
   }, []);
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 5500);
-    return () => clearTimeout(t);
-  }, [toast]);
   if (!snapshot.state)
     return (
       <div className="boot" role="status">
@@ -65,7 +58,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     );
   const state = snapshot.state;
   const actor = actorWithGrants(actorFor(snapshot.role), state);
-  const notify = (text: string, error = false) => setToast({ text, error });
+  const notify = (text: string, error = false) => showToast(text,error?"error":"success");
   const run = (command: Command, success = "Workspace updated") => {
     try {
       demoRepository.dispatch(command);
@@ -105,27 +98,9 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         data-compact={state.settings.compact}
         data-reduced-motion={state.settings.reducedMotion}
       >
-        {snapshot.persistenceError && (
-          <div className="storage-warning" role="alert">
-            {snapshot.persistenceError}
-          </div>
-        )}
+        <Feedback message={snapshot.persistenceError??""} tone="error"/>
         {children}
       </div>
-      {toast && (
-        <div
-          className={`toast ${toast.error ? "error" : ""}`}
-          role={toast.error ? "alert" : "status"}
-        >
-          {toast.text}
-          <button
-            aria-label="Dismiss notification"
-            onClick={() => setToast(null)}
-          >
-            ×
-          </button>
-        </div>
-      )}
     </DemoContext.Provider>
   );
 }
