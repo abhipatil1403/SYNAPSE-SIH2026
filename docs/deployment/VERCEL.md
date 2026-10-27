@@ -1,6 +1,6 @@
 # Vercel authentication preview
 
-This deployment serves the existing Next.js application and hosted Supabase account APIs. It does **not** deploy the operational PostgreSQL backend. `lib/workbench/config.ts` restricts that database to loopback, and `lib/workbench/server.ts` additionally restricts the request origin to localhost. The original dashboard and its embedded administrator/profile pages require that snapshot and will remain unavailable on Vercel. Do not relax these guards or enable hosted complaint access to hide this limitation.
+This deployment serves the existing Next.js application and hosted Supabase account workspace. [Phase 11](../phase11/README.md) connects the original shell, profile and authorized User Approvals through the trusted account gateway; case/SLA reads require explicit server allowlisting and an approved expiring SQL lease. It does **not** deploy the local operational PostgreSQL backend. Its loopback/origin guards remain intact, and full hosted complaint writes remain disabled.
 
 ## Import and build
 
@@ -45,7 +45,7 @@ Do not change Confirm Email, signup permissions, database policies or assignment
 - `/api/auth/session`: returns only the current account after login; unauthenticated requests fail.
 - `/forgot-password`: use an approved account and verify the actual mailbox/callback on this HTTPS origin.
 - Logout: copied prior session cookies must be rejected. Inspect cookies for `HttpOnly`, `Secure` and `SameSite=Lax` in this deployment.
-- `/api/workspace/snapshot`: remains unavailable (503) because hosted operational access is not configured; the dashboard/admin/profile UI consequently cannot operate here. `/api/health` returning 200 does not prove backend availability.
+- `/api/workspace/snapshot`: an approved account receives `ACCOUNT_ONLY` metadata with the complaint preview closed. Verify Settings/profile and authorized `/admin`; complaint KPIs remain explicitly unavailable until approved preview access. `/api/health` returning 200 does not prove backend availability.
 
 Local hosted-connection verification tested the new inline certificate using the actual restricted login and a read-only `SELECT 1`, with TLS CA and hostname verification enabled. That is **not** evidence of a Vercel deployment or its network/HTTPS behavior; those checks must run after deployment.
 
@@ -53,6 +53,6 @@ Deployment preparation passed 120 unit tests, typecheck, lint, production build 
 
 ## Full operational deployment still required
 
-Provide a separately reviewed hosted operational schema/runtime, least-privilege connection and authorization boundary. Reconcile/import data non-destructively, adapt the local-only data adapter, deploy a separate durable worker and authenticated translation service, and rerun hosted authorization/two-account/HTTPS/expiry tests. Existing localhost URLs, Windows DPAPI vaults and local worker processes cannot become hosted services by copying environment variables. Gmail remains disabled pending an explicitly approved mailbox/OAuth connection. The Phase 10 release blockers and human acceptance still apply.
+Implement the remaining reviewed transactional workflows in the existing Supabase project; no separate paid PostgreSQL service is required. Reconcile/import data non-destructively, preserve least-privilege identity/Bureau/document authorization, select a reviewed provider-job runtime, and rerun hosted authorization/two-account/HTTPS/expiry tests. Existing localhost URLs, Windows DPAPI vaults and local worker processes cannot become hosted services by copying environment variables. Gmail remains disabled pending an explicitly approved mailbox/OAuth connection. The Phase 10/11 release blockers and human acceptance still apply.
 
 Official references: [Vercel Next.js](https://vercel.com/docs/frameworks/full-stack/nextjs), [environment variables](https://vercel.com/docs/environment-variables), [Git branch configuration](https://vercel.com/docs/git), [forwarded client-IP header](https://vercel.com/docs/headers/request-headers), [Supabase redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls).

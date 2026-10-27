@@ -51,6 +51,7 @@ export const institutionSchema = z.object({ id, name: text, permanentId: z.strin
 export const actionSchema = z.object({ id, caseId: id, type: z.enum(["INSPECTION", "APPROVAL", "REJECTION", "REFERRAL"]), topic: text, from: at, until: at, reason: text, actorId: id }).strict();
 export const snapshotSchema = z.object({
   revision: version, generatedAt: at,
+  workspace:z.object({mode:z.enum(['ACCOUNT_ONLY','READ_ONLY']),sources:z.array(z.enum(['cases','institutions','sla','references'])),reason:text}).strict().optional(),
   reportScope:z.string().regex(/^[a-f0-9]{64}$/).optional(),
   cases: z.array(caseSchema), drafts: z.array(draftSchema), tasks: z.array(taskSchema), evidence: z.array(evidenceSchema),
   matches: z.array(z.object({ id, draftId: id, caseId: id, explanation: text, algorithmVersion: text,
@@ -61,7 +62,7 @@ export const snapshotSchema = z.object({
   comments: z.array(z.object({ id, caseId: id, authorId: id, body: text, at }).strict()),
   activity: z.array(z.object({ id, caseId: id.nullable(), actorId: id, type: text, reason: text, at }).strict()),
   sla: z.array(z.object({ id, caseId: id, taskId: id.nullable(), dueAt: at, originalDueAt: at,
-    status: z.enum(["RUNNING", "PAUSED", "COMPLETED", "BREACHED"]), policyVersionId: id }).strict()),
+    status: z.enum(["RUNNING", "PAUSED", "COMPLETED", "BREACHED", "MET", "CANCELLED"]), policyVersionId: id }).strict()),
   events: z.array(z.object({ id, caseId: id, title: text, at, type: z.enum(["HEARING", "REVIEW", "APPROVAL", "BUREAU_ACTIVITY"]), cancelledAt:at.optional(),cancelledBy:id.optional() }).strict()),
   notifications: z.array(z.object({ id, userId: id, caseId: id.nullable(), title: text, at, readAt: at.nullable() }).strict()),
   accessRequests: z.array(z.object({ id, caseId: id, requesterId: id, scope: scopeSchema, reason: text,

@@ -2,7 +2,7 @@
 
 The original Fernly-inspired dashboard now uses authenticated server requests and persistent PostgreSQL. Supabase supplies real email/password authentication and approved officer identity. Operational development data uses a separate loopback PostgreSQL database; hosted Live Mode and hosted business writes remain disabled.
 
-For cloud deployment, the selected no-additional-database setup is [Render Free + existing Supabase](docs/deployment/RENDER.md), configured by `render.yaml`. The [Vercel alternative](docs/deployment/VERCEL.md) remains documented. Both currently support an authentication preview: the operational dashboard still requires reviewed Supabase workflow implementation, not the local-only workbench connection.
+For cloud deployment, the selected no-additional-database setup is [Render Free + existing Supabase](docs/deployment/RENDER.md), configured by `render.yaml`. The [Vercel alternative](docs/deployment/VERCEL.md) remains documented. The [hosted account workspace](docs/phase11/README.md) connects the original shell, profile and authorized User Approvals without opening complaint data. Case/SLA preview requires an explicit server allowlist and approved expiring database lease. Full hosted business workflows remain disabled.
 
 Start at **http://localhost:3000/login**. An active approved officer enters `/dashboard`; pending or revoked authority goes to `/pending-approval`. The Development System Administrator uses **Audit & Administration → User Approvals** at `/admin`. A System Administrator has configuration authority without blanket complaint access.
 

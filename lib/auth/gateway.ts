@@ -19,12 +19,12 @@ function database() {
   pool.on("error", () => { /* No URL/provider/user material is written to logs. */ });
   return pool;
 }
-export async function gateway(operation: "read" | "account" | "limit" | "memberships" | "roles" | "applicants" | "profile", claims: unknown, action: string, input: unknown = {}) {
+export async function gateway(operation: "read" | "account" | "limit" | "memberships" | "roles" | "applicants" | "profile" | "workspace", claims: unknown, action: string, input: unknown = {}) {
   const connection = await database().connect().catch(()=>{throw new Phase1Error(503,'gateway_connection_unavailable','Secure account access is temporarily unavailable. Please retry.');});
   try {
     await connection.query("BEGIN");
     await connection.query("SET LOCAL ROLE synapse_web_gateway");
-    const result = operation === "profile" ? await connection.query("SELECT synapse_gateway.profile($1,$2) result", [JSON.stringify(claims),JSON.stringify(input)]) : operation === "limit"
+    const result = operation === "workspace" ? await connection.query("SELECT synapse_gateway.workspace($1) result",[JSON.stringify(claims)]) : operation === "profile" ? await connection.query("SELECT synapse_gateway.profile($1,$2) result", [JSON.stringify(claims),JSON.stringify(input)]) : operation === "limit"
       ? await connection.query("SELECT synapse_gateway.limit_attempt($1,$2,$3) result", [action, (input as { limit: number }).limit, 900])
       : await connection.query(operation === 'applicants'?'SELECT synapse_gateway.applicants($1,$2,$3) result':operation === "read" ? "SELECT synapse_gateway.read($1,$2,$3) result" : operation === "memberships" ? "SELECT synapse_gateway.memberships($1,$2,$3) result" : operation === "roles" ? "SELECT synapse_gateway.roles($1,$2,$3) result" : "SELECT synapse_gateway.account($1,$2,$3) result", [JSON.stringify(claims), action, JSON.stringify(input)]);
     await connection.query("COMMIT"); return result.rows[0].result as unknown;

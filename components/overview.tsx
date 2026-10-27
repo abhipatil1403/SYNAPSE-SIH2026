@@ -54,7 +54,7 @@ export function Overview() {
         <Link href="/reports" className="btn">
           View Reports <ArrowUpRight size={16} />
         </Link>
-        <Link href="/intake" className="btn primary">Create Complaint</Link>
+        {s.workspace?<button className="btn primary" disabled title="Hosted complaint writes remain disabled">Create Complaint</button>:<Link href="/intake" className="btn primary">Create Complaint</Link>}
       </PageHeader>
       <div className="metrics-grid">
         <Metric
@@ -392,10 +392,7 @@ export function Overview() {
             AI FINDINGS <Badge tone="light">Human review</Badge>
           </div>
           <h2>
-            {findings.filter((f) => f.status === "DETECTED").length}{" "}
-            findings
-            <br />
-            to review.
+            {s.workspace?<>Hosted AI<br/>integration pending.</>:<>{findings.filter((f) => f.status === "DETECTED").length}{" "}findings<br/>to review.</>}
           </h2>
           <p>
             Source-backed insights.
@@ -429,7 +426,7 @@ export function Overview() {
               <small>{date(e.at)}</small>
             </div>
           ))}
-          {!audit.length&&<Empty title="No authorized activity" description="Committed workspace changes appear here."/>}
+          {!audit.length&&<Empty title={s.workspace?'Activity integration pending':'No authorized activity'} description={s.workspace?'Hosted activity is not connected in this read-only preview.':'Committed workspace changes appear here.'}/>}
         </Card>
       </div>
       <div className="workspace-note">

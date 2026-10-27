@@ -8,7 +8,7 @@ The current hosted account gateway connects to the **same Supabase database** wi
 
 The URL and public publishable key configure the Supabase client. After sign-in, the actual user's issued JWT authorizes protected Data API requests through RLS or reviewed RPCs. An unauthenticated key alone must not grant complaint access. The current application specifically expects an `sb_publishable_...` key in `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; do not substitute a legacy JWT anon key without adapting and testing that validation.
 
-Hosted workflow support is **not complete**: `lib/platform/repository.ts` has closed compile-time read/write gates, and neither `synapse_platform_snapshot` nor `synapse_platform_command` has an implementation in the repository's reviewed migrations. The dashboard currently uses the isolated local Workbench instead. Deploying on Render does not change that. Authentication/account APIs can run with the existing gateway; the original dashboard/admin/profile UI still needs an authorized operational snapshot and remains blocked remotely. This is deployment configuration, not a claim that every feature is hosted.
+Hosted workflow support is **not complete**: the generic platform read/write gates remain closed and generic business RPCs remain unimplemented. [Phase 11](../phase11/README.md) adds a private authorized read-only path: approved accounts can load the original shell, Settings/profile and authorized User Approvals. Case/SLA data requires an explicit server allowlist and approved expiring SQL lease; full hosted business workflows remain disabled. The working local Workbench is preserved separately. Deployment is not a claim that every feature is hosted.
 
 ## Exact deployment steps
 

@@ -1,0 +1,47 @@
+{
+  "checkedAt": "2026-10-27T13:19:00.726Z",
+  "source": "Actual hosted Supabase Auth/private account workspace in production Next.js at loopback test origin; no local operational database, seeded business data or mocked API. Not deployed HTTPS acceptance.",
+  "results": [
+    {
+      "slot": 0,
+      "snapshotHttp": 200,
+      "mode": "ACCOUNT_ONLY",
+      "roles": [
+        "CASE_OFFICER"
+      ],
+      "profileRendered": true,
+      "adminBoundaryVerified": true,
+      "writesDenied": true,
+      "logoutReplayDenied": true
+    },
+    {
+      "slot": 1,
+      "snapshotHttp": 200,
+      "mode": "ACCOUNT_ONLY",
+      "roles": [
+        "CASE_OFFICER"
+      ],
+      "profileRendered": true,
+      "adminBoundaryVerified": true,
+      "writesDenied": true,
+      "logoutReplayDenied": true
+    },
+    {
+      "slot": 2,
+      "snapshotHttp": 200,
+      "mode": "ACCOUNT_ONLY",
+      "roles": [
+        "SYSTEM_ADMIN"
+      ],
+      "profileRendered": true,
+      "adminBoundaryVerified": true,
+      "writesDenied": true,
+      "logoutReplayDenied": true
+    }
+  ],
+  "actualIssuedJwt": true,
+  "providerMocked": false,
+  "caseReadLeaseEnabled": false,
+  "businessWritesEnabled": false,
+  "manualAcceptance": "AWAITING USER MANUAL TESTING"
+}

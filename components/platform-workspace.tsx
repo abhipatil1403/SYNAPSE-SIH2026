@@ -17,6 +17,7 @@ import {Overview} from "./overview";
 import {AccountProfile,AccountReadiness} from "./account-profile";
 import {OfficerAdministration} from "./officer-workspace";
 import {PageHeader} from './ui';
+import {HostedReadonlyPages} from './hosted-readonly-pages';
 import {OperationalCalendar,OperationalTasks,OperationalAnalytics,OperationalFindings,OperationalReports} from './operational-panels';
 export function OperationalPages({ path }: { path: string[] }) {
   const section = path[0] ?? "dashboard", caseId = section === "cases" ? path[1] : undefined;
@@ -26,6 +27,7 @@ export function OperationalPages({ path }: { path: string[] }) {
   useEffect(()=>{queueMicrotask(()=>{setFilter(requestedStatus);setPage(1);});},[requestedStatus]);
   const list = snapshot ? registry(snapshot, { q, status: filter, page, pageSize: 10 }) : null;
   const selected = snapshot?.cases.find((c) => c.id === caseId);
+  if(snapshot?.workspace)return <HostedReadonlyPages key={section+':'+requestedStatus} section={section} caseId={caseId} initialStatus={requestedStatus}/>;
   return <div className="operational-page">
     {section!=='dashboard'&&<PageHeader title={caseId?'Complaint details':sections.find(([id])=>id===section)?.[1]??(section==='admin'?'Audit & Administration':'Workspace')} subtitle="Your authorized records, kept in sync."><button className="btn" onClick={()=>void load()} disabled={busy}><RefreshCw size={16}/>Refresh</button></PageHeader>}
     {message&&<p role="alert" className="platform-notice">{message}</p>}

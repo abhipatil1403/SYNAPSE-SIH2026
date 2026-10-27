@@ -9,6 +9,7 @@ import { ZodError } from "zod";
 import { workbenchConfig } from "../workbench/config";
 import { workbenchServer } from "../workbench/server";
 import { Phase1Error } from "../live/service";
+import { hostedReadonlyServer } from "./hosted-readonly";
 type PlatformDatabase = { public: Omit<Phase1Database["public"], "Functions"> & { Functions: Phase1Database["public"]["Functions"] & {
   synapse_platform_snapshot: { Args: Record<PropertyKey, never>; Returns: Json };
   synapse_platform_command: { Args: { p_envelope: Json }; Returns: Json };
@@ -16,7 +17,7 @@ type PlatformDatabase = { public: Omit<Phase1Database["public"], "Functions"> & 
 
 export function platformServer(request: NextRequest) {
   if (workbenchConfig()) return workbenchServer(request);
-  if (!activation.reads) throw new PlatformError(503, "platform_locked", activation.reason);
+  if (!activation.reads) return hostedReadonlyServer(request);
   const context = phase1Context(request);
   // Narrow declared pending RPC surface only; no service client or direct private tables.
   const client = context.client as unknown as SupabaseClient<PlatformDatabase>;

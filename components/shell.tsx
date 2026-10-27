@@ -251,7 +251,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
           <div className="sidebar-foot">
             <span className="status-dot" />
-            Authenticated development workspace
+            {snapshot.workspace?'Authenticated Supabase workspace':'Authenticated development workspace'}
           </div>
         </div>
       </aside>
@@ -277,7 +277,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="topbar-actions">
             <span className="demo-pill">
               <span />
-              Development
+              {snapshot.workspace?'Read-only':'Development'}
             </span>
             <button
               className="icon-btn notification-trigger"

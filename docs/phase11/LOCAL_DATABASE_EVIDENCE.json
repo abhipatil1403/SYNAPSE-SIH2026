@@ -1,0 +1,12 @@
+{
+  "checkedAt": "2026-10-27T12:53:35.890Z",
+  "source": "disposable loopback database; managed Auth helpers simulated; no real JWT issued",
+  "workspaceSha256": "6146e5c83c2e69b0f6c58d0115541efc8224cfbf17c847aacc62f039a9b0cfd0",
+  "postgres": "18.1",
+  "checks": [
+    "LOCAL WORKSPACE: private browser/service denial, approved account-only fallback, expiring gate, exact bigint data, actual case/SLA/calendar metrics, cross-Bureau isolation, no admin case bypass, suspension, role/membership expiry and revoked-session denial PASS. Synthetic SQL claims only; every fixture and gate change rolled back."
+  ],
+  "gateChangesRolledBack": true,
+  "syntheticClaims": true,
+  "actualIssuedJwt": false
+}

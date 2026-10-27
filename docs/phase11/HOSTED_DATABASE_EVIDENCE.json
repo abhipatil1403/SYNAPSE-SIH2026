@@ -1,0 +1,62 @@
+{
+  "checkedAt": "2026-10-27T13:01:22.920Z",
+  "source": "Actual online-verified Supabase-issued JWTs, real restricted web-runtime database login, deployed private workspace function. No synthetic business records or temporary authority changes were committed.",
+  "checks": [
+    {
+      "id": "actual_issued_jwt_runtime_account_workspace_0",
+      "status": "PASS"
+    },
+    {
+      "id": "direct_case_rpcs_remain_closed_0",
+      "status": "PASS"
+    },
+    {
+      "id": "expired_sql_claim_tuple_and_unmapped_subject_denied_0",
+      "status": "PASS"
+    },
+    {
+      "id": "same_actual_session_denied_after_self_revocation_0",
+      "status": "PASS"
+    },
+    {
+      "id": "actual_issued_jwt_runtime_account_workspace_1",
+      "status": "PASS"
+    },
+    {
+      "id": "direct_case_rpcs_remain_closed_1",
+      "status": "PASS"
+    },
+    {
+      "id": "expired_sql_claim_tuple_and_unmapped_subject_denied_1",
+      "status": "PASS"
+    },
+    {
+      "id": "same_actual_session_denied_after_self_revocation_1",
+      "status": "PASS"
+    },
+    {
+      "id": "actual_issued_jwt_runtime_account_workspace_2",
+      "status": "PASS"
+    },
+    {
+      "id": "direct_case_rpcs_remain_closed_2",
+      "status": "PASS"
+    },
+    {
+      "id": "expired_sql_claim_tuple_and_unmapped_subject_denied_2",
+      "status": "PASS"
+    },
+    {
+      "id": "same_actual_session_denied_after_self_revocation_2",
+      "status": "PASS"
+    }
+  ],
+  "actualIssuedJwt": true,
+  "publicRpcExposed": false,
+  "businessFixturesCommitted": false,
+  "activationCommitted": false,
+  "businessWritesEnabled": false,
+  "caseIsolation": "Positive case/SLA isolation verified in disposable SQL tests only. Hosted case fixtures/lease test blocked by the intentional operator-to-gateway SET ROLE boundary (42501) and inactive read lease; no grant was changed to bypass it.",
+  "naturalJwtExpiry": "NOT RETESTED: altered exp tuple above is a SQL validation test, not an actually expired issued-JWT soak",
+  "manualAcceptance": "AWAITING USER MANUAL TESTING"
+}
